@@ -62,6 +62,11 @@ let raf = null;
 // lane flash timestamps (ms) for hit feedback
 let laneHighlights = [0, 0, 0, 0];
 
+// Feedback text for PERFECT/GOOD/MISS
+let feedbackText = '';
+let feedbackColor = '#fff';
+let feedbackTime = 0;
+
 canvas.width = CANVAS_W;
 canvas.height = CANVAS_H;
 
@@ -159,15 +164,18 @@ function applyHit(arrow, result) {
   arrow.judged = true;
   if (result === 'perfect') {
     score += 300;
+    feedbackText = 'PERFECT!';
+    feedbackColor = '#4dff88';
   } else {
     score += 100;
+    feedbackText = 'GOOD!';
+    feedbackColor = '#ffd24d';
   }
   combo++;
   hits++;
+  feedbackTime = performance.now();
 
-  // flash this lane
   laneHighlights[arrow.lane] = performance.now();
-
   updateHUD();
 }
 
@@ -178,6 +186,9 @@ function missOldArrows() {
       a.judged = true;
       a.result = 'miss';
       combo = 0;
+      feedbackText = 'MISS!';
+      feedbackColor = '#ff4d4d';
+      feedbackTime = performance.now();
     }
   }
 }
@@ -208,7 +219,7 @@ function draw() {
     ctx.strokeRect(x, 0, LANE_WIDTH, CANVAS_H);
 
     ctx.fillStyle = '#555';
-    ctx.font = '16px monospace';
+    ctx.font = '16px "Press Start 2P", monospace';
     const label = LANES[i].replace('Arrow', '');
     ctx.fillText(label, x + (LANE_WIDTH / 2) - ctx.measureText(label).width / 2, 24);
   }
@@ -228,6 +239,23 @@ function draw() {
     const x = a.lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
+
+  // Feedback text (PERFECT/GOOD/MISS)
+  if (feedbackText && now - feedbackTime < 300) {
+    ctx.fillStyle = feedbackColor;
+    ctx.font = '24px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(feedbackText, CANVAS_W / 2, HITLINE_Y - 40);
+  }
+
+  // Combo pop
+  if (combo > 0) {
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '20px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${combo} Combo`, CANVAS_W / 2, HITLINE_Y + 30);
+  }
+  ctx.textAlign = 'left'; // reset
 }
 
 /**
