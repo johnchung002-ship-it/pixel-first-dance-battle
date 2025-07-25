@@ -1,3 +1,5 @@
+alert("game.js is loaded!");
+
 /* --------- CONFIG --------- */
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 const CANVAS_W = 480;
