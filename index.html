@@ -1,24 +1,50 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pixel First Dance Battle</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="game-container">
-    <h1>💃 Pixel First Dance Battle 🕺</h1>
-    <canvas id="gameCanvas" width="512" height="256"></canvas>
-    <div id="scoreboard" class="hidden">
-      <label for="initials">Enter your initials:</label>
-      <input type="text" id="initials" maxlength="3" />
-      <button onclick="submitScore()">Submit</button>
+  <div id="game-root">
+    <header>
+      <h1>💃 Pixel First Dance Battle 🕺</h1>
+      <div id="hud">
+        <span>Score: <strong id="score">0</strong></span>
+        <span>Combo: <strong id="combo">0</strong></span>
+        <span>Accuracy: <strong id="accuracy">100%</strong></span>
+        <button id="startBtn">Start</button>
+        <button id="retryBtn" class="hidden">Retry</button>
+      </div>
+    </header>
+
+    <div id="stage-wrap">
+      <canvas id="gameCanvas" width="480" height="640"></canvas>
     </div>
-    <div id="leaderboard"></div>
+
+    <section id="leaderboardSection">
+      <h2>🏆 Leaderboard</h2>
+      <ol id="leaderboard"></ol>
+    </section>
   </div>
-  <audio id="bgm" src="level-up-chorus.mp3" preload="auto"></audio>
+
+  <!-- Swap src to your actual audio file name/path -->
+  <audio id="bgm" preload="auto" src="Ciara-Level-Up-chorus.mp3" crossorigin="anonymous"></audio>
+
+  <!-- Submit score modal -->
+  <div id="scoreModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Final Score: <span id="finalScore">0</span></h2>
+      <p>Enter your initials:</p>
+      <input id="initials" maxlength="3" placeholder="ABC" />
+      <div class="modal-buttons">
+        <button id="submitScoreBtn">Submit</button>
+        <button id="skipSubmitBtn">Skip</button>
+      </div>
+    </div>
+  </div>
+
   <script src="game.js"></script>
 </body>
 </html>
