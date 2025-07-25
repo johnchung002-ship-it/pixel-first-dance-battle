@@ -82,17 +82,18 @@ header h1 {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.55);
   z-index: 1;
   pointer-events: none;
+  mix-blend-mode: screen; /* Enhances the neon tint */
 }
 
 @keyframes pulse-floor {
   0%, 100% {
-    filter: brightness(0.85) contrast(1);
+    filter: brightness(0.8) contrast(1) drop-shadow(0 0 6px var(--accent));
   }
   50% {
-    filter: brightness(1.05) contrast(1.05);
+    filter: brightness(1.1) contrast(1.1) drop-shadow(0 0 14px var(--accent));
   }
 }
 
