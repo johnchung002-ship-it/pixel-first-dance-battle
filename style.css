@@ -17,7 +17,7 @@
 
 body {
   margin: 0;
-  background: #000; /* Fallback color */
+  background: #000;
   background: linear-gradient(to bottom, #101010, #1a1a1a 70%, #101010);
   color: var(--fg);
   display: flex;
@@ -31,7 +31,6 @@ body {
   padding: 12px;
 }
 
-/* Title */
 header h1 {
   text-align: center;
   margin: 8px 0 12px;
@@ -39,7 +38,6 @@ header h1 {
   text-shadow: 0 0 6px #0ff, 0 0 10px #0ff;
 }
 
-/* HUD */
 #hud {
   display: flex;
   gap: 12px;
@@ -68,7 +66,7 @@ header h1 {
 
 .hidden { display: none !important; }
 
-/* Stage with Ebell floor background */
+/* Stage with pulsing dancefloor background */
 #stage-wrap {
   border: 2px solid var(--lane-border);
   background: #111 url('dancefloor_bg.png') center center / cover no-repeat;
@@ -76,18 +74,28 @@ header h1 {
   overflow: hidden;
   box-shadow: 0 0 16px rgba(0,0,0,0.6);
   margin-bottom: 16px;
+  animation: pulse-floor 1.07s infinite ease-in-out; /* 1.07s ~ 140 BPM */
 }
 
-/* Dark overlay on the floor image for better contrast */
+/* Dark overlay */
 #stage-wrap::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6); /* Dark overlay */
+  background: rgba(0, 0, 0, 0.6);
   z-index: 1;
+  pointer-events: none;
 }
 
-/* Leaderboard */
+@keyframes pulse-floor {
+  0%, 100% {
+    filter: brightness(0.85) contrast(1);
+  }
+  50% {
+    filter: brightness(1.05) contrast(1.05);
+  }
+}
+
 #leaderboardSection {
   margin-top: 12px;
   font-size: 10px;
@@ -97,7 +105,6 @@ header h1 {
   line-height: 1.6;
 }
 
-/* Modal */
 .modal {
   position: fixed;
   inset: 0;
@@ -143,7 +150,7 @@ header h1 {
   font-family: 'Press Start 2P', monospace;
 }
 
-/* Ensure canvas stays on top of background overlay */
+/* Canvas always on top */
 #gameCanvas {
   position: relative;
   z-index: 2;
