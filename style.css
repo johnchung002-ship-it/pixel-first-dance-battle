@@ -1,31 +1,113 @@
+:root {
+  --bg: #0d0d0d;
+  --fg: #e0e0e0;
+  --accent: #00ff9d;
+  --miss: #ff4d4d;
+  --good: #ffd24d;
+  --perfect: #4dff88;
+  --lane-border: #333;
+  --hitline: #888;
+  --modal-bg: rgba(0,0,0,0.75);
+  font-family: monospace;
+}
+
+* { box-sizing: border-box; }
 
 body {
-  background-color: #000;
-  color: #fff;
-  font-family: 'Courier New', monospace;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   margin: 0;
-  padding: 2em;
+  background: var(--bg);
+  color: var(--fg);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
 }
 
-.game-container {
+#game-root {
+  width: 520px;
+  max-width: 100%;
+  padding: 12px;
+}
+
+header h1 {
   text-align: center;
+  margin: 8px 0 12px;
 }
 
-canvas {
-  background-color: #111;
-  border: 2px solid #fff;
-  margin: 20px auto;
-  display: block;
+#hud {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
-.hidden {
-  display: none;
+#hud button {
+  cursor: pointer;
+  background: var(--accent);
+  border: none;
+  padding: 6px 12px;
+  color: #000;
+  font-weight: bold;
+  border-radius: 4px;
 }
 
-#leaderboard {
-  margin-top: 20px;
-  text-align: left;
+.hidden { display: none !important; }
+
+#stage-wrap {
+  border: 2px solid var(--lane-border);
+  background:
+    linear-gradient(to bottom, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.02) 100%),
+    url('backdrop_ebell_pixel.png'); /* Optional: your pixel Ebell backdrop */
+  background-size: cover;
+  box-shadow: 0 0 16px rgba(0,0,0,0.6);
+  margin-bottom: 16px;
+}
+
+#leaderboardSection {
+  margin-top: 12px;
+}
+
+#leaderboard li {
+  line-height: 1.6;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-content {
+  background: #111;
+  border: 1px solid #333;
+  padding: 16px;
+  width: 320px;
+  max-width: 100%;
+  text-align: center;
+  border-radius: 6px;
+}
+.modal-content input {
+  width: 80px;
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 8px 0 16px;
+}
+.modal-buttons {
+  display: flex; 
+  gap: 8px; 
+  justify-content: center;
+}
+.modal-buttons button {
+  cursor: pointer;
+  background: var(--accent);
+  border: none;
+  padding: 6px 12px;
+  color: #000;
+  font-weight: bold;
+  border-radius: 4px;
 }
