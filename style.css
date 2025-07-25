@@ -56,9 +56,7 @@ header h1 {
 
 #stage-wrap {
   border: 2px solid var(--lane-border);
-  background:
-    linear-gradient(to bottom, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.02) 100%),
-    url('backdrop_ebell_pixel.png'); /* Optional: your pixel Ebell backdrop */
+  background: #111; /* fallback solid background */
   background-size: cover;
   box-shadow: 0 0 16px rgba(0,0,0,0.6);
   margin-bottom: 16px;
