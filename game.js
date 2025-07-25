@@ -1,6 +1,6 @@
 /* --------- CONFIG --------- */
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
-const LANE_KEYS = LANES; // 1:1 mapping
+const LANE_KEYS = LANES;
 const CANVAS_W = 480;
 const CANVAS_H = 640;
 
@@ -8,13 +8,13 @@ const HITLINE_Y = 520;
 const ARROW_SIZE = 48;
 const LANE_WIDTH = CANVAS_W / LANES.length;
 
-const BPM = 100;                  // adjust if you know exact BPM of your clip
-const NOTES_PER_BEAT = 2;         // 8th notes
-const BARS = 16;                  // total bars
-const SONG_OFFSET = 0.5;          // seconds delay before first note hits line
-const HIT_WINDOW_PERFECT = 0.08;  // +/- seconds
+const BPM = 100;                  
+const NOTES_PER_BEAT = 2;         
+const BARS = 16;                  
+const SONG_OFFSET = 0.5;          
+const HIT_WINDOW_PERFECT = 0.08;  
 const HIT_WINDOW_GOOD = 0.15;
-const ARROW_SPEED = 400;          // px/sec (visual speed)
+const ARROW_SPEED = 400;          
 const MAX_LEADERBOARD = 10;
 /* -------------------------- */
 
@@ -37,23 +37,14 @@ canvas.width = CANVAS_W;
 canvas.height = CANVAS_H;
 
 let playing = false;
-let startedAt = 0;         // when bgm actually started (for latency offset if needed)
-let arrows = [];           // pattern
-let active = [];           // not-yet-judged arrows
+let startedAt = 0;
+let arrows = [];
+let active = [];
 let score = 0;
 let hits = 0;
 let totalNotes = 0;
 let combo = 0;
 let raf = null;
-
-/** Arrow object shape
- * {
- *   lane: number,
- *   t: number,         // exact hit time (song time)
- *   judged: false,
- *   result: null       // 'perfect'|'good'|'miss'
- * }
- */
 
 function loadLeaderboard() {
   const data = JSON.parse(localStorage.getItem('leaderboard') || '[]');
@@ -81,6 +72,7 @@ function resetState() {
   updateHUD();
   arrows = buildPattern();
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
+  console.log("Pattern built:", arrows);
 }
 
 function startGame() {
@@ -90,12 +82,14 @@ function startGame() {
   startBtn.classList.add('hidden');
   hideModal();
 
+  console.log("Game starting, trying to play music...");
   bgm.currentTime = 0;
   bgm.play().then(() => {
+    console.log("Music is playing!");
     startedAt = performance.now() / 1000;
     loop();
-  }).catch(() => {
-    // If autoplay blocked, reveal a hint
+  }).catch((err) => {
+    console.warn("Music blocked or error:", err);
     startBtn.classList.remove('hidden');
     playing = false;
   });
@@ -105,13 +99,13 @@ function endGame() {
   playing = false;
   cancelAnimationFrame(raf);
   bgm.pause();
+  console.log("Game ended, final score:", score);
   finalScoreEl.textContent = score;
   retryBtn.classList.remove('hidden');
   showModal();
 }
 
 function getSongTime() {
-  // Use bgm.currentTime. If you want to tweak for latency you can adjust here.
   return bgm.currentTime;
 }
 
@@ -119,13 +113,13 @@ function buildPattern() {
   const pattern = [];
   const beat = 60 / BPM;
   const noteStep = beat / NOTES_PER_BEAT;
-  // Start at first hit time at SONG_OFFSET
   let time = SONG_OFFSET;
-  const totalSteps = BARS * 4 * NOTES_PER_BEAT; // 4 beats per bar
+  const totalSteps = BARS * 4 * NOTES_PER_BEAT;
+
   for (let i = 0; i < totalSteps; i++, time += noteStep) {
-    // Simple generator: 70% chance to spawn an arrow on each subdivision
     if (Math.random() < 0.7) {
       const lane = Math.floor(Math.random() * LANES.length);
+      console.log(`Arrow generated in lane: ${LANES[lane]} at t=${time.toFixed(2)}s`);
       pattern.push({ lane, t: time });
     }
   }
@@ -138,7 +132,6 @@ function judgeHit(key) {
   if (lane === -1) return;
 
   const t = getSongTime();
-  // find closest unjudged arrow in this lane
   let best = null;
   let bestDiff = Infinity;
   for (const a of active) {
@@ -151,7 +144,6 @@ function judgeHit(key) {
   }
   if (!best) return;
 
-  // Only judge if it's within GOOD window AND hasn't passed greatly
   if (bestDiff <= HIT_WINDOW_PERFECT) {
     applyHit(best, 'perfect');
   } else if (bestDiff <= HIT_WINDOW_GOOD) {
@@ -162,6 +154,7 @@ function judgeHit(key) {
 function applyHit(arrow, result) {
   arrow.judged = true;
   arrow.result = result;
+  console.log(`Hit! Lane: ${LANES[arrow.lane]}, Result: ${result}`);
   if (result === 'perfect') {
     score += 300;
     combo++;
@@ -178,10 +171,10 @@ function missOldArrows() {
   const t = getSongTime();
   for (const a of active) {
     if (!a.judged && t - a.t > HIT_WINDOW_GOOD) {
-      // it's a miss
       a.judged = true;
       a.result = 'miss';
       combo = 0;
+      console.log(`Miss! Lane: ${LANES[a.lane]}`);
     }
   }
 }
@@ -196,65 +189,40 @@ function updateHUD() {
 function draw() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // lanes
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
     ctx.strokeStyle = '#333';
     ctx.strokeRect(x, 0, LANE_WIDTH, CANVAS_H);
-    // lane labels at top
     ctx.fillStyle = '#555';
     ctx.font = '16px monospace';
     ctx.fillText(LANES[i].replace('Arrow', ''), x + LANE_WIDTH / 2 - 20, 24);
   }
 
-  // hit line
   ctx.strokeStyle = '#888';
   ctx.beginPath();
   ctx.moveTo(0, HITLINE_Y);
   ctx.lineTo(CANVAS_W, HITLINE_Y);
   ctx.stroke();
 
-  // draw arrows
   const t = getSongTime();
-
-  // compute y from time: if t == arrow.t => y = HITLINE_Y
-  // distance to hit line = (arrow.t - t) * ARROW_SPEED
-  // So y = HITLINE_Y - distance
   for (const a of active) {
     if (a.judged) continue;
     const dt = a.t - t;
     const y = HITLINE_Y - dt * ARROW_SPEED;
-
-    // draw only if on screen
     if (y < -ARROW_SIZE || y > CANVAS_H + ARROW_SIZE) continue;
-
     const x = a.lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
-
-    ctx.fillStyle = '#0ff';
-    ctx.strokeStyle = '#00cccc';
-    ctx.lineWidth = 2;
-
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
 }
 
 function drawArrowSprite(ctx, x, y, size, lane) {
-  // Simple arrow using triangles
   ctx.save();
   ctx.translate(x + size / 2, y + size / 2);
-
-  const directions = {
-    0: Math.PI,         // Left
-    1: Math.PI / 2,     // Down
-    2: -Math.PI / 2,    // Up
-    3: 0                // Right
-  };
+  const directions = {0: Math.PI, 1: Math.PI/2, 2: -Math.PI/2, 3: 0};
   ctx.rotate(directions[lane]);
-
   ctx.fillStyle = '#00ff9d';
   ctx.strokeStyle = '#006644';
   ctx.lineWidth = 2;
-
   ctx.beginPath();
   ctx.moveTo(-size * 0.4, -size * 0.2);
   ctx.lineTo(0, -size * 0.5);
@@ -266,24 +234,20 @@ function drawArrowSprite(ctx, x, y, size, lane) {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-
   ctx.restore();
 }
 
 function loop() {
   if (!playing) return;
-
   missOldArrows();
   draw();
   updateHUD();
 
-  // End condition: all arrows judged & song mostly done
   const allJudged = active.every(a => a.judged);
   if (allJudged || bgm.ended) {
     endGame();
     return;
   }
-
   raf = requestAnimationFrame(loop);
 }
 
@@ -307,9 +271,6 @@ submitScoreBtn.addEventListener('click', () => {
   }
   hideModal();
 });
-skipSubmitBtn.addEventListener('click', () => {
-  hideModal();
-});
+skipSubmitBtn.addEventListener('click', () => hideModal());
 
-// Load leaderboard on boot
 loadLeaderboard();
