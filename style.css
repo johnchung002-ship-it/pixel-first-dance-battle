@@ -66,34 +66,34 @@ header h1 {
 
 .hidden { display: none !important; }
 
-/* Stage with pulsing dancefloor background */
+/* Stage with brighter pixelated Ebell background */
 #stage-wrap {
   border: 2px solid var(--lane-border);
-  background: #111 url('dancefloor_bg.png') center center / cover no-repeat;
+  background: #111 url('ebell_bg.png') center center / cover no-repeat;
   position: relative;
   overflow: hidden;
   box-shadow: 0 0 16px rgba(0,0,0,0.6);
   margin-bottom: 16px;
-  animation: pulse-floor 1.07s infinite ease-in-out; /* 1.07s ~ 140 BPM */
+  animation: pulse-floor 1.07s infinite ease-in-out; /* ~140 BPM */
 }
 
-/* Dark overlay */
+/* Dark overlay to keep arrows visible */
 #stage-wrap::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.35);
   z-index: 1;
   pointer-events: none;
-  mix-blend-mode: screen; /* Enhances the neon tint */
+  mix-blend-mode: multiply;
 }
 
 @keyframes pulse-floor {
   0%, 100% {
-    filter: brightness(0.8) contrast(1) drop-shadow(0 0 6px var(--accent));
+    filter: brightness(1) contrast(1);
   }
   50% {
-    filter: brightness(1.1) contrast(1.1) drop-shadow(0 0 14px var(--accent));
+    filter: brightness(1.1) contrast(1.05);
   }
 }
 
@@ -151,7 +151,7 @@ header h1 {
   font-family: 'Press Start 2P', monospace;
 }
 
-/* Canvas always on top */
+/* Canvas stays above the overlay */
 #gameCanvas {
   position: relative;
   z-index: 2;
