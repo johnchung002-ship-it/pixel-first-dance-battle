@@ -62,6 +62,9 @@ let raf = null;
 // lane flash timestamps (ms) for hit feedback
 let laneHighlights = [0, 0, 0, 0];
 
+// receptor flash timestamps (ms) for receptor pads
+let receptorFlash = [0, 0, 0, 0];
+
 // Feedback text for PERFECT/GOOD/MISS
 let feedbackText = '';
 let feedbackColor = '#fff';
@@ -86,6 +89,7 @@ function resetState() {
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
   totalNotes = arrows.length;
   laneHighlights = [0, 0, 0, 0];
+  receptorFlash = [0, 0, 0, 0];
 }
 
 function startGame() {
@@ -180,6 +184,8 @@ function applyHit(arrow, result) {
   feedbackTime = performance.now();
 
   laneHighlights[arrow.lane] = performance.now();
+  receptorFlash[arrow.lane] = performance.now(); // flash the receptor
+
   updateHUD();
 }
 
@@ -235,6 +241,12 @@ function draw() {
   ctx.lineTo(CANVAS_W, HITLINE_Y);
   ctx.stroke();
 
+  // receptor pads
+  for (let i = 0; i < LANES.length; i++) {
+    drawReceptor(ctx, i);
+  }
+
+  // falling arrows
   const t = getTime();
   for (const a of active) {
     if (a.judged) continue;
@@ -274,6 +286,23 @@ function draw() {
     }
   }
   ctx.textAlign = 'left'; // reset
+}
+
+/**
+ * Stationary receptor arrow at the hit line that flashes on hit.
+ */
+function drawReceptor(ctx, lane) {
+  const flashDuration = 150; // ms
+  const age = performance.now() - receptorFlash[lane];
+  const alpha = age < flashDuration ? 1 : 0.7;
+
+  const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
+  const y = HITLINE_Y - ARROW_SIZE / 2; // center receptors on hit line
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  drawArrowSprite(ctx, x, y, ARROW_SIZE, lane);
+  ctx.restore();
 }
 
 /**
