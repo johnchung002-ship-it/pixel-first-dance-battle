@@ -67,6 +67,9 @@ let feedbackText = '';
 let feedbackColor = '#fff';
 let feedbackTime = 0;
 
+// Combo animation
+let comboAnimStart = 0;
+
 canvas.width = CANVAS_W;
 canvas.height = CANVAS_H;
 
@@ -172,6 +175,7 @@ function applyHit(arrow, result) {
     feedbackColor = '#ffd24d';
   }
   combo++;
+  comboAnimStart = performance.now();
   hits++;
   feedbackTime = performance.now();
 
@@ -248,12 +252,26 @@ function draw() {
     ctx.fillText(feedbackText, CANVAS_W / 2, HITLINE_Y - 40);
   }
 
-  // Combo pop
+  // Combo pop animation
   if (combo > 0) {
-    ctx.fillStyle = '#00ff9d';
-    ctx.font = '20px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${combo} Combo`, CANVAS_W / 2, HITLINE_Y + 30);
+    const elapsed = now - comboAnimStart;
+    if (elapsed < 600) { // show for 0.6s
+      const progress = elapsed / 600;
+      const scale = 1 + 0.5 * (1 - progress);
+      const opacity = 1 - progress;
+
+      ctx.save();
+      ctx.translate(CANVAS_W / 2, HITLINE_Y + 60);
+      ctx.scale(scale, scale);
+      ctx.globalAlpha = opacity;
+
+      ctx.fillStyle = '#00ff9d';
+      ctx.font = '20px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${combo} Combo`, 0, 0);
+
+      ctx.restore();
+    }
   }
   ctx.textAlign = 'left'; // reset
 }
