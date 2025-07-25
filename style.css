@@ -55,30 +55,6 @@ body {
   }
 }
 
-/* Bride & Groom background characters */
-.bg-characters {
-  position: absolute;
-  bottom: 10px;
-  left: 0;
-  width: 100%;
-  height: 150px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  z-index: 1; /* Behind arrows but above background */
-  pointer-events: none;
-}
-
-.bg-char {
-  max-height: 100%;
-  animation: dance 1s infinite ease-in-out;
-}
-
-@keyframes dance {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
 header h1 {
   text-align: center;
   margin: 8px 0 12px;
@@ -168,8 +144,30 @@ header h1 {
   font-family: 'Press Start 2P', monospace;
 }
 
-/* Canvas above background characters */
+/* Canvas above everything in the stage */
 #gameCanvas {
   position: relative;
   z-index: 2;
+}
+
+/* --- Background characters BEHIND the game --- */
+.background-characters {
+  position: fixed;
+  bottom: 40px;              /* move up/down as you like */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;                /* stays behind the game/UI */
+  pointer-events: none;      /* never blocks clicks/keys */
+  opacity: 0.9;
+}
+
+.background-characters img {
+  height: 150px;             /* scale the couple here */
+  image-rendering: pixelated;
+  animation: bg-dance 1s infinite ease-in-out;
+}
+
+@keyframes bg-dance {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
 }
