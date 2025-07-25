@@ -1,10 +1,3 @@
-// Prevent arrow keys from scrolling the page
-window.addEventListener("keydown", function(e) {
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
-    e.preventDefault();
-  }
-}, { passive: false });
-
 /***** CONFIG *****/
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 const CANVAS_W = 480, CANVAS_H = 640;
@@ -13,19 +6,23 @@ const HITLINE_Y = 520;
 const ARROW_SIZE = 48;
 const LANE_WIDTH = CANVAS_W / LANES.length;
 
-/** Timing tuned for the chorus snippet **/
 const BPM = 140;                 // Level Up ~140 BPM
 const NOTES_PER_BEAT = 2;        // 8th notes
 const SONG_OFFSET = 0.3;         // delay before first hit (tweak if needed)
-const SNIPPET_SECONDS = 30;      // length of your chorus snippet
+const SNIPPET_SECONDS = 30;      // your chorus snippet length
 
-/** Judgement windows (seconds) **/
 const HIT_WINDOW_PERFECT = 0.08;
 const HIT_WINDOW_GOOD = 0.15;
 
-/** Visual speed (px/sec) **/
 const ARROW_SPEED = 400;
 /******************/
+
+// Block arrow keys from scrolling the page globally
+window.addEventListener("keydown", function (e) {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+    e.preventDefault();
+  }
+}, { passive: false });
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -47,13 +44,16 @@ const leaderboardEl = document.getElementById('leaderboard');
 let playing = false;
 let startTime = 0;
 
-let arrows = [];   // the full chart
-let active = [];   // working copy for judging
+let arrows = [];
+let active = [];
 let score = 0;
 let hits = 0;
 let totalNotes = 0;
 let combo = 0;
 let raf = null;
+
+// Lane flash timestamps (ms) for hit feedback
+let laneHighlights = [0, 0, 0, 0];
 
 canvas.width = CANVAS_W;
 canvas.height = CANVAS_H;
@@ -70,6 +70,7 @@ function resetState() {
   arrows = buildPatternForSnippet();
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
   totalNotes = arrows.length;
+  laneHighlights = [0, 0, 0, 0];
 }
 
 function startGame() {
@@ -82,7 +83,6 @@ function startGame() {
 
   startTime = performance.now() / 1000;
 
-  // Start music on user click (autoplay safe)
   if (bgm) {
     bgm.currentTime = 0;
     bgm.play().catch(err => console.warn('Music blocked:', err));
@@ -101,15 +101,13 @@ function endGame() {
   showModal();
 }
 
-/* Build a chart that covers exactly the snippet duration */
 function buildPatternForSnippet() {
   const pattern = [];
   const beat = 60 / BPM;
   const noteStep = beat / NOTES_PER_BEAT;
-
   const endTime = SONG_OFFSET + SNIPPET_SECONDS;
+
   for (let t = SONG_OFFSET; t <= endTime; t += noteStep) {
-    // Increase/remove randomness as you like
     if (Math.random() < 0.75) {
       pattern.push({
         lane: Math.floor(Math.random() * LANES.length),
@@ -159,6 +157,10 @@ function applyHit(arrow, result) {
   }
   combo++;
   hits++;
+
+  // flash this lane
+  laneHighlights[arrow.lane] = performance.now();
+
   updateHUD();
 }
 
@@ -185,9 +187,17 @@ function updateHUD() {
 function draw() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // Lanes
+  // Lane backgrounds / borders
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
+
+    // highlight flash (150ms)
+    const now = performance.now();
+    if (now - laneHighlights[i] < 150) {
+      ctx.fillStyle = 'rgba(0,255,150,0.2)';
+      ctx.fillRect(x, 0, LANE_WIDTH, CANVAS_H);
+    }
+
     ctx.strokeStyle = '#333';
     ctx.strokeRect(x, 0, LANE_WIDTH, CANVAS_H);
 
@@ -208,7 +218,6 @@ function draw() {
     if (a.judged) continue;
     const y = HITLINE_Y - (a.t - t) * ARROW_SPEED;
     if (y < -ARROW_SIZE || y > CANVAS_H + ARROW_SIZE) continue;
-
     const x = a.lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
@@ -252,9 +261,8 @@ function loop() {
   draw();
   updateHUD();
 
-  // End when all judged or we've passed the snippet time
   const t = getTime();
-  const endTime = SONG_OFFSET + SNIPPET_SECONDS + 0.5; // small buffer
+  const endTime = SONG_OFFSET + SNIPPET_SECONDS + 0.5;
   if (active.every(a => a.judged) || t > endTime) {
     endGame();
     return;
@@ -287,10 +295,8 @@ displayLeaderboard(JSON.parse(localStorage.getItem('leaderboard') || '[]'));
 
 /* ---------------- Events ---------------- */
 
-// Prevent the page from scrolling with arrow keys
 document.addEventListener('keydown', (e) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-    e.preventDefault();
     if (playing) judgeHit(e.key);
   }
 });
