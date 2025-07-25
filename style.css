@@ -17,18 +17,42 @@
 
 body {
   margin: 0;
-  background: #000;
-  background: linear-gradient(to bottom, #101010, #1a1a1a 70%, #101010);
+  background: #000 url('ebell_bg.png') center center / cover no-repeat fixed;
   color: var(--fg);
   display: flex;
   justify-content: center;
   min-height: 100vh;
 }
 
+/* Game container */
 #game-root {
   width: 520px;
   max-width: 100%;
   padding: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Blurred backdrop for playable area */
+#stage-wrap {
+  border: 2px solid var(--lane-border);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px); /* Adds blur effect */
+  -webkit-backdrop-filter: blur(5px);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 16px rgba(0,0,0,0.6);
+  margin-bottom: 16px;
+  animation: pulse-floor 1.07s infinite ease-in-out;
+}
+
+@keyframes pulse-floor {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.1);
+  }
 }
 
 header h1 {
@@ -66,37 +90,7 @@ header h1 {
 
 .hidden { display: none !important; }
 
-/* Stage with brighter pixelated Ebell background */
-#stage-wrap {
-  border: 2px solid var(--lane-border);
-  background: #111 url('ebell_bg.png') center center / cover no-repeat;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 0 16px rgba(0,0,0,0.6);
-  margin-bottom: 16px;
-  animation: pulse-floor 1.07s infinite ease-in-out; /* ~140 BPM */
-}
-
-/* Dark overlay to keep arrows visible */
-#stage-wrap::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 1;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-}
-
-@keyframes pulse-floor {
-  0%, 100% {
-    filter: brightness(1) contrast(1);
-  }
-  50% {
-    filter: brightness(1.1) contrast(1.05);
-  }
-}
-
+/* Leaderboard */
 #leaderboardSection {
   margin-top: 12px;
   font-size: 10px;
@@ -106,6 +100,7 @@ header h1 {
   line-height: 1.6;
 }
 
+/* Modal */
 .modal {
   position: fixed;
   inset: 0;
@@ -151,7 +146,7 @@ header h1 {
   font-family: 'Press Start 2P', monospace;
 }
 
-/* Canvas stays above the overlay */
+/* Canvas above the background */
 #gameCanvas {
   position: relative;
   z-index: 2;
