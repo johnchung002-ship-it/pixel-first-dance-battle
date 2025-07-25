@@ -1,3 +1,10 @@
+// Prevent arrow keys from scrolling the page
+window.addEventListener("keydown", function(e) {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
 /***** CONFIG *****/
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 const CANVAS_W = 480, CANVAS_H = 640;
