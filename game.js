@@ -240,24 +240,28 @@ function draw() {
     ctx.fillText(feedbackText, CANVAS_W / 2, HITLINE_Y - 40);
   }
 
-  // Combo pop animation
+  // Combo text with beat pulse
   if (combo > 0) {
-    const elapsed = now - comboAnimStart;
-    if (elapsed < 600) {
-      const progress = elapsed / 600;
-      const scale = 1 + 0.5 * (1 - progress);
-      const opacity = 1 - progress;
-      ctx.save();
-      ctx.translate(CANVAS_W / 2, HITLINE_Y + 60);
-      ctx.scale(scale, scale);
-      ctx.globalAlpha = opacity;
-      ctx.fillStyle = '#00ff9d';
-      ctx.font = '20px "Press Start 2P", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${combo} Combo`, 0, 0);
-      ctx.restore();
-    }
+    const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+    const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2); // ~8% pulse
+    const beatGlow = 12 + 8 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2; // 12 to 20 glow
+
+    ctx.save();
+    ctx.translate(CANVAS_W / 2, HITLINE_Y + 60);
+    ctx.scale(beatScale, beatScale);
+    ctx.globalAlpha = 1;
+
+    ctx.shadowColor = '#00ff9d';
+    ctx.shadowBlur = beatGlow;
+
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '20px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${combo} Combo`, 0, 0);
+
+    ctx.restore();
   }
+
   ctx.textAlign = 'left';
 }
 
