@@ -3,7 +3,7 @@ const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 const CANVAS_W = 480, CANVAS_H = 640;
 
 const HITLINE_Y = 520;
-const ARROW_SIZE = 70; // Slightly larger to match sprite proportions
+const ARROW_SIZE = 64; // tweak if you want them bigger/smaller
 const LANE_WIDTH = CANVAS_W / LANES.length;
 
 const BPM = 140;
@@ -15,7 +15,9 @@ const HIT_WINDOW_PERFECT = 0.08;
 const HIT_WINDOW_GOOD = 0.15;
 
 const ARROW_SPEED = 400;
-const BEAT_INTERVAL = 60 / BPM;
+const BEAT_INTERVAL = 60 / BPM; // for beat pulse
+
+const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
 /******************/
 
 // Prevent arrow keys from scrolling
@@ -63,6 +65,9 @@ let feedbackColor = '#fff';
 let feedbackTime = 0;
 let comboAnimStart = 0;
 
+// NEW: hit flash ring effects
+let hitFlashes = [];
+
 canvas.width = CANVAS_W;
 canvas.height = CANVAS_H;
 
@@ -91,6 +96,7 @@ function resetState() {
   totalNotes = arrows.length;
   laneHighlights = [0, 0, 0, 0];
   receptorFlash = [0, 0, 0, 0];
+  hitFlashes = [];
 }
 
 function startGame() {
@@ -176,6 +182,10 @@ function applyHit(arrow, result) {
   feedbackTime = performance.now();
   laneHighlights[arrow.lane] = performance.now();
   receptorFlash[arrow.lane] = performance.now();
+
+  // NEW: push a hit flash for this lane
+  hitFlashes.push({ lane: arrow.lane, start: performance.now() });
+
   updateHUD();
 }
 
@@ -243,6 +253,9 @@ function draw() {
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
 
+  // NEW: draw hit flashes (after arrows/receptors so they appear on top)
+  drawHitFlashes();
+
   // Feedback text
   if (feedbackText && now - feedbackTime < 300) {
     ctx.fillStyle = feedbackColor;
@@ -276,6 +289,7 @@ function draw() {
   ctx.textAlign = 'left';
 }
 
+/* --- Beat Pulse Receptor --- */
 function drawReceptor(ctx, lane) {
   const flashDuration = 150;
   const age = performance.now() - receptorFlash[lane];
@@ -284,18 +298,47 @@ function drawReceptor(ctx, lane) {
   const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
   const y = HITLINE_Y - ARROW_SIZE / 2;
 
+  // Beat pulse factor
+  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL; // 0-1
+  const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
+  const pulseGlow = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
+
   ctx.save();
   ctx.globalAlpha = alpha;
-
-  // Beat pulse effect
-  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
-  const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
   ctx.translate(x + ARROW_SIZE / 2, y + ARROW_SIZE / 2);
   ctx.scale(pulseScale, pulseScale);
   ctx.translate(-ARROW_SIZE / 2, -ARROW_SIZE / 2);
 
+  ctx.shadowColor = '#fff';
+  ctx.shadowBlur = age < flashDuration ? 20 : pulseGlow;
+
   drawArrowSprite(ctx, 0, 0, ARROW_SIZE, lane);
   ctx.restore();
+}
+
+/* --- Hit Flash Rings --- */
+function drawHitFlashes() {
+  const now = performance.now();
+  // keep flashes for 250ms
+  hitFlashes = hitFlashes.filter(f => now - f.start < 250);
+
+  for (const f of hitFlashes) {
+    const progress = (now - f.start) / 250; // 0 -> 1
+    const alpha = 1 - progress;
+    const size = ARROW_SIZE + 30 * progress;
+
+    const x = f.lane * LANE_WIDTH + (LANE_WIDTH / 2);
+    const y = HITLINE_Y;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = LANE_COLORS[f.lane];
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawArrowSprite(ctx, x, y, size, lane) {
