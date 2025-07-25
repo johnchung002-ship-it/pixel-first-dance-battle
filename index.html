@@ -1,9 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pixel First Dance Battle</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 <body>
   <!-- Background Characters -->
   <div class="background-characters">
     <img src="bride_groom.png" alt="Bride and Groom">
   </div>
 
+  <!-- Game Root -->
   <div id="game-root">
     <header>
       <h1>💃 Pixel First Dance Battle 🕺</h1>
@@ -26,8 +35,10 @@
     </section>
   </div>
 
+  <!-- Music -->
   <audio id="bgm" preload="auto" src="Ciara-Level-Up.mp3"></audio>
 
+  <!-- Score Modal -->
   <div id="scoreModal" class="modal hidden">
     <div class="modal-content">
       <h2>Final Score: <span id="finalScore">0</span></h2>
@@ -42,3 +53,4 @@
 
   <script src="game.js"></script>
 </body>
+</html>
