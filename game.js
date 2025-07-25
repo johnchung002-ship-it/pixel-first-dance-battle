@@ -44,12 +44,19 @@ function startGame() {
 
   startTime = performance.now() / 1000;
 
-  // Try to start music on user click
-  if (bgm) {
-    bgm.currentTime = 0;
-    bgm.play()
-      .then(() => console.log("Music started"))
-      .catch(err => console.warn("Music blocked:", err));
+  // Debug audio
+  const audio = document.getElementById('bgm');
+  console.log("Audio element:", audio);
+  console.log("Audio src:", audio.src);
+
+  if (audio) {
+    audio.currentTime = 0;
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => console.log("Music started successfully"))
+        .catch(err => console.error("Music play failed:", err));
+    }
   }
 
   loop();
