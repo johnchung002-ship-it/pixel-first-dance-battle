@@ -216,7 +216,7 @@ function draw() {
   ctx.lineTo(CANVAS_W, HITLINE_Y);
   ctx.stroke();
 
-  // Receptors (debug squares)
+  // Receptors
   for (let i = 0; i < LANES.length; i++) {
     drawReceptor(ctx, i);
   }
@@ -263,16 +263,21 @@ function draw() {
 function drawReceptor(ctx, lane) {
   const flashDuration = 150;
   const age = performance.now() - receptorFlash[lane];
-  const alpha = age < flashDuration ? 1 : 0.7;
+  const alpha = age < flashDuration ? 1 : 0.8;
 
   const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
   const y = HITLINE_Y - ARROW_SIZE / 2;
 
   ctx.save();
   ctx.globalAlpha = alpha;
-  // Debug white square
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(x, y, ARROW_SIZE, ARROW_SIZE);
+
+  // Glow when flashing
+  if (age < flashDuration) {
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 15;
+  }
+
+  drawArrowSprite(ctx, x, y, ARROW_SIZE, lane);
   ctx.restore();
 }
 
@@ -350,12 +355,8 @@ function loop() {
 }
 
 /* ---------------- Leaderboard ---------------- */
-function showModal() {
-  scoreModal.classList.remove('hidden');
-}
-function hideModal() {
-  scoreModal.classList.add('hidden');
-}
+function showModal() { scoreModal.classList.remove('hidden'); }
+function hideModal() { scoreModal.classList.add('hidden'); }
 function saveScore() {
   const initials = initialsInput.value.toUpperCase().trim();
   const leaderboard = JSON.parse(localStorage.getItem('leaderboard') || '[]');
