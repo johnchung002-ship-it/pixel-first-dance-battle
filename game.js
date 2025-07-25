@@ -15,6 +15,9 @@ const HIT_WINDOW_PERFECT = 0.08;
 const HIT_WINDOW_GOOD = 0.15;
 
 const ARROW_SPEED = 400;
+
+// Lane-specific colors (Left, Down, Up, Right)
+const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
 /******************/
 
 // Prevent arrow keys from scrolling the page
@@ -56,7 +59,7 @@ let totalNotes = 0;
 let combo = 0;
 let raf = null;
 
-// lane flash timestamps (ms)
+// lane flash timestamps (ms) for hit feedback
 let laneHighlights = [0, 0, 0, 0];
 
 canvas.width = CANVAS_W;
@@ -235,8 +238,8 @@ function drawArrowSprite(ctx, x, y, size, lane) {
   ctx.save();
   ctx.translate(x, y);
 
-  ctx.fillStyle = '#00ff9d';
-  ctx.strokeStyle = '#006644';
+  ctx.fillStyle = LANE_COLORS[lane];
+  ctx.strokeStyle = '#000';
   ctx.lineWidth = 2;
   ctx.beginPath();
 
