@@ -1,5 +1,3 @@
-alert("game.js is loaded!");
-
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 const CANVAS_W = 480, CANVAS_H = 640;
 const HITLINE_Y = 520, ARROW_SIZE = 48, LANE_WIDTH = CANVAS_W / LANES.length;
@@ -45,10 +43,15 @@ function startGame() {
   hideModal();
 
   startTime = performance.now() / 1000;
-  if (bgm && bgm.src) {
+
+  // Try to start music on user click
+  if (bgm) {
     bgm.currentTime = 0;
-    bgm.play().catch(() => console.warn("Autoplay blocked"));
+    bgm.play()
+      .then(() => console.log("Music started"))
+      .catch(err => console.warn("Music blocked:", err));
   }
+
   loop();
 }
 
