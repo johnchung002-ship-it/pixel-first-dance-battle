@@ -3,7 +3,7 @@ const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 const CANVAS_W = 480, CANVAS_H = 640;
 
 const HITLINE_Y = 520;
-const ARROW_SIZE = 64; // Slightly larger to match sprite proportions
+const ARROW_SIZE = 70; // Slightly larger to match sprite proportions
 const LANE_WIDTH = CANVAS_W / LANES.length;
 
 const BPM = 140;
