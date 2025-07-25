@@ -33,7 +33,7 @@ body {
   z-index: 1;
 }
 
-/* Blurred backdrop for playable area */
+/* Playable area */
 #stage-wrap {
   border: 2px solid var(--lane-border);
   background: rgba(0, 0, 0, 0.45);
@@ -47,12 +47,8 @@ body {
 }
 
 @keyframes pulse-floor {
-  0%, 100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.1);
-  }
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.1); }
 }
 
 header h1 {
@@ -144,25 +140,24 @@ header h1 {
   font-family: 'Press Start 2P', monospace;
 }
 
-/* Canvas above everything in the stage */
 #gameCanvas {
   position: relative;
   z-index: 2;
 }
 
-/* --- Background characters BEHIND the game --- */
+/* Background characters behind everything */
 .background-characters {
   position: fixed;
-  bottom: 40px;              /* move up/down as you like */
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 0;                /* stays behind the game/UI */
-  pointer-events: none;      /* never blocks clicks/keys */
+  z-index: 0;
+  pointer-events: none;
   opacity: 0.9;
 }
 
 .background-characters img {
-  height: 150px;             /* scale the couple here */
+  height: 150px;
   image-rendering: pixelated;
   animation: bg-dance 1s infinite ease-in-out;
 }
