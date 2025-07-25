@@ -1,66 +1,124 @@
-function drawArrowSprite(ctx, x, y, size, lane) {
-  ctx.save();
-  ctx.translate(x, y);
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-  // Lane-specific colors
-  const laneColors = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d']; // left=red, down=blue, up=green, right=yellow
-  ctx.fillStyle = laneColors[lane];
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 2;
+:root {
+  --bg: #0d0d0d;
+  --fg: #e0e0e0;
+  --accent: #00ff9d;
+  --miss: #ff4d4d;
+  --good: #ffd24d;
+  --perfect: #4dff88;
+  --lane-border: #333;
+  --hitline: #888;
+  --modal-bg: rgba(0,0,0,0.75);
+  font-family: 'Press Start 2P', monospace;
+}
 
-  ctx.beginPath();
+* { box-sizing: border-box; }
 
-  switch (lane) {
-    case 0: // Left
-      ctx.moveTo(size, 0);
-      ctx.lineTo(0, size * 0.5);
-      ctx.lineTo(size, size);
-      ctx.lineTo(size * 0.7, size);
-      ctx.lineTo(size * 0.7, size * 0.65);
-      ctx.lineTo(size * 0.3, size * 0.65);
-      ctx.lineTo(size * 0.3, size * 0.35);
-      ctx.lineTo(size * 0.7, size * 0.35);
-      ctx.lineTo(size * 0.7, 0);
-      ctx.closePath();
-      break;
+body {
+  margin: 0;
+  background: linear-gradient(to bottom, #101010, #1a1a1a 70%, #101010);
+  color: var(--fg);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
 
-    case 1: // Down
-      ctx.moveTo(0, 0);
-      ctx.lineTo(size * 0.35, 0);
-      ctx.lineTo(size * 0.35, size * 0.3);
-      ctx.lineTo(size * 0.65, size * 0.3);
-      ctx.lineTo(size * 0.65, 0);
-      ctx.lineTo(size, 0);
-      ctx.lineTo(size * 0.5, size);
-      ctx.closePath();
-      break;
+#game-root {
+  width: 520px;
+  max-width: 100%;
+  padding: 12px;
+}
 
-    case 2: // Up
-      ctx.moveTo(size * 0.5, 0);
-      ctx.lineTo(size, size);
-      ctx.lineTo(size * 0.65, size);
-      ctx.lineTo(size * 0.65, size * 0.7);
-      ctx.lineTo(size * 0.35, size * 0.7);
-      ctx.lineTo(size * 0.35, size);
-      ctx.lineTo(0, size);
-      ctx.closePath();
-      break;
+header h1 {
+  text-align: center;
+  margin: 8px 0 12px;
+  font-size: 18px;
+  text-shadow: 0 0 6px #0ff, 0 0 10px #0ff;
+}
 
-    case 3: // Right
-      ctx.moveTo(0, 0);
-      ctx.lineTo(size, size * 0.5);
-      ctx.lineTo(0, size);
-      ctx.lineTo(size * 0.3, size);
-      ctx.lineTo(size * 0.3, size * 0.65);
-      ctx.lineTo(size * 0.7, size * 0.65);
-      ctx.lineTo(size * 0.7, size * 0.35);
-      ctx.lineTo(size * 0.3, size * 0.35);
-      ctx.lineTo(size * 0.3, 0);
-      ctx.closePath();
-      break;
-  }
+#hud {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
 
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
+#hud strong {
+  color: var(--accent);
+  text-shadow: 0 0 4px var(--accent);
+}
+
+#hud button {
+  cursor: pointer;
+  background: var(--accent);
+  border: none;
+  padding: 6px 12px;
+  color: #000;
+  font-weight: bold;
+  border-radius: 4px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.hidden { display: none !important; }
+
+#stage-wrap {
+  border: 2px solid var(--lane-border);
+  background: #111; /* Placeholder solid background */
+  background-size: cover;
+  box-shadow: 0 0 16px rgba(0,0,0,0.6);
+  margin-bottom: 16px;
+}
+
+#leaderboardSection {
+  margin-top: 12px;
+  font-size: 10px;
+}
+
+#leaderboard li {
+  line-height: 1.6;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-content {
+  background: #111;
+  border: 1px solid #333;
+  padding: 16px;
+  width: 320px;
+  max-width: 100%;
+  text-align: center;
+  border-radius: 6px;
+}
+.modal-content input {
+  width: 80px;
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 8px 0 16px;
+}
+.modal-buttons {
+  display: flex; 
+  gap: 8px; 
+  justify-content: center;
+}
+.modal-buttons button {
+  cursor: pointer;
+  background: var(--accent);
+  border: none;
+  padding: 6px 12px;
+  color: #000;
+  font-weight: bold;
+  border-radius: 4px;
+  font-family: 'Press Start 2P', monospace;
 }
