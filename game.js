@@ -1,5 +1,5 @@
 /***** CONFIG *****/
-const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
+const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight']; // matches column labels
 const CANVAS_W = 480, CANVAS_H = 640;
 
 const HITLINE_Y = 520;
@@ -8,7 +8,7 @@ const LANE_WIDTH = CANVAS_W / LANES.length;
 
 const BPM = 140;                 // Level Up ~140 BPM
 const NOTES_PER_BEAT = 2;        // 8th notes
-const SONG_OFFSET = 0.3;         // delay before first hit (tweak if needed)
+const SONG_OFFSET = 0.3;         // tweak if needed
 const SNIPPET_SECONDS = 30;      // your chorus snippet length
 
 const HIT_WINDOW_PERFECT = 0.08;
@@ -17,12 +17,16 @@ const HIT_WINDOW_GOOD = 0.15;
 const ARROW_SPEED = 400;
 /******************/
 
-// Block arrow keys from scrolling the page globally
-window.addEventListener("keydown", function (e) {
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
-    e.preventDefault();
-  }
-}, { passive: false });
+// Prevent arrow keys from scrolling the page
+window.addEventListener(
+  "keydown",
+  function (e) {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+      e.preventDefault();
+    }
+  },
+  { passive: false }
+);
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -52,7 +56,7 @@ let totalNotes = 0;
 let combo = 0;
 let raf = null;
 
-// Lane flash timestamps (ms) for hit feedback
+// lane flash timestamps (ms)
 let laneHighlights = [0, 0, 0, 0];
 
 canvas.width = CANVAS_W;
@@ -187,12 +191,11 @@ function updateHUD() {
 function draw() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // Lane backgrounds / borders
+  // lanes + labels + highlight
+  const now = performance.now();
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
 
-    // highlight flash (150ms)
-    const now = performance.now();
     if (now - laneHighlights[i] < 150) {
       ctx.fillStyle = 'rgba(0,255,150,0.2)';
       ctx.fillRect(x, 0, LANE_WIDTH, CANVAS_H);
@@ -203,10 +206,11 @@ function draw() {
 
     ctx.fillStyle = '#555';
     ctx.font = '16px monospace';
-    ctx.fillText(LANES[i].replace('Arrow', ''), x + (LANE_WIDTH / 2) - 20, 24);
+    const label = LANES[i].replace('Arrow', '');
+    ctx.fillText(label, x + (LANE_WIDTH / 2) - ctx.measureText(label).width / 2, 24);
   }
 
-  // Hit line
+  // hit line
   ctx.strokeStyle = '#888';
   ctx.beginPath();
   ctx.moveTo(0, HITLINE_Y);
@@ -223,32 +227,71 @@ function draw() {
   }
 }
 
+/**
+ * Draw each arrow with a fixed shape per lane (no rotation) so lanes match labels.
+ * x, y are TOP-LEFT coords.
+ */
 function drawArrowSprite(ctx, x, y, size, lane) {
   ctx.save();
-  ctx.translate(x + size / 2, y + size / 2);
-
-  const directions = {
-    0: Math.PI,       // Left
-    1: Math.PI / 2,   // Down
-    2: -Math.PI / 2,  // Up
-    3: 0              // Right
-  };
-  ctx.rotate(directions[lane]);
+  ctx.translate(x, y);
 
   ctx.fillStyle = '#00ff9d';
   ctx.strokeStyle = '#006644';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(-size * 0.4, -size * 0.2);
-  ctx.lineTo(0, -size * 0.5);
-  ctx.lineTo(size * 0.4, -size * 0.2);
-  ctx.lineTo(size * 0.2, -size * 0.2);
-  ctx.lineTo(size * 0.2, size * 0.5);
-  ctx.lineTo(-size * 0.2, size * 0.5);
-  ctx.closePath();
+
+  switch (lane) {
+    case 0: // Left
+      ctx.moveTo(size, 0);
+      ctx.lineTo(0, size * 0.5);
+      ctx.lineTo(size, size);
+      ctx.lineTo(size * 0.7, size);
+      ctx.lineTo(size * 0.7, size * 0.65);
+      ctx.lineTo(size * 0.3, size * 0.65);
+      ctx.lineTo(size * 0.3, size * 0.35);
+      ctx.lineTo(size * 0.7, size * 0.35);
+      ctx.lineTo(size * 0.7, 0);
+      ctx.closePath();
+      break;
+
+    case 1: // Down
+      ctx.moveTo(0, 0);
+      ctx.lineTo(size * 0.35, 0);
+      ctx.lineTo(size * 0.35, size * 0.3);
+      ctx.lineTo(size * 0.65, size * 0.3);
+      ctx.lineTo(size * 0.65, 0);
+      ctx.lineTo(size, 0);
+      ctx.lineTo(size * 0.5, size);
+      ctx.closePath();
+      break;
+
+    case 2: // Up
+      ctx.moveTo(size * 0.5, 0);
+      ctx.lineTo(size, size);
+      ctx.lineTo(size * 0.65, size);
+      ctx.lineTo(size * 0.65, size * 0.7);
+      ctx.lineTo(size * 0.35, size * 0.7);
+      ctx.lineTo(size * 0.35, size);
+      ctx.lineTo(0, size);
+      ctx.closePath();
+      break;
+
+    case 3: // Right
+      ctx.moveTo(0, 0);
+      ctx.lineTo(size, size * 0.5);
+      ctx.lineTo(0, size);
+      ctx.lineTo(size * 0.3, size);
+      ctx.lineTo(size * 0.3, size * 0.65);
+      ctx.lineTo(size * 0.7, size * 0.65);
+      ctx.lineTo(size * 0.7, size * 0.35);
+      ctx.lineTo(size * 0.3, size * 0.35);
+      ctx.lineTo(size * 0.3, 0);
+      ctx.closePath();
+      break;
+  }
+
   ctx.fill();
   ctx.stroke();
-
   ctx.restore();
 }
 
