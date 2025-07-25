@@ -17,6 +17,7 @@
 
 body {
   margin: 0;
+  background: #000; /* Fallback color */
   background: linear-gradient(to bottom, #101010, #1a1a1a 70%, #101010);
   color: var(--fg);
   display: flex;
@@ -30,6 +31,7 @@ body {
   padding: 12px;
 }
 
+/* Title */
 header h1 {
   text-align: center;
   margin: 8px 0 12px;
@@ -37,6 +39,7 @@ header h1 {
   text-shadow: 0 0 6px #0ff, 0 0 10px #0ff;
 }
 
+/* HUD */
 #hud {
   display: flex;
   gap: 12px;
@@ -65,14 +68,26 @@ header h1 {
 
 .hidden { display: none !important; }
 
+/* Stage with Ebell floor background */
 #stage-wrap {
   border: 2px solid var(--lane-border);
-  background: #111; /* Placeholder solid background */
-  background-size: cover;
+  background: #111 url('dancefloor_bg.png') center center / cover no-repeat;
+  position: relative;
+  overflow: hidden;
   box-shadow: 0 0 16px rgba(0,0,0,0.6);
   margin-bottom: 16px;
 }
 
+/* Dark overlay on the floor image for better contrast */
+#stage-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6); /* Dark overlay */
+  z-index: 1;
+}
+
+/* Leaderboard */
 #leaderboardSection {
   margin-top: 12px;
   font-size: 10px;
@@ -91,7 +106,9 @@ header h1 {
   align-items: center;
   justify-content: center;
   padding: 16px;
+  z-index: 999;
 }
+
 .modal-content {
   background: #111;
   border: 1px solid #333;
@@ -101,17 +118,20 @@ header h1 {
   text-align: center;
   border-radius: 6px;
 }
+
 .modal-content input {
   width: 80px;
   text-align: center;
   font-size: 1.2rem;
   margin: 8px 0 16px;
 }
+
 .modal-buttons {
-  display: flex; 
-  gap: 8px; 
+  display: flex;
+  gap: 8px;
   justify-content: center;
 }
+
 .modal-buttons button {
   cursor: pointer;
   background: var(--accent);
@@ -121,4 +141,10 @@ header h1 {
   font-weight: bold;
   border-radius: 4px;
   font-family: 'Press Start 2P', monospace;
+}
+
+/* Ensure canvas stays on top of background overlay */
+#gameCanvas {
+  position: relative;
+  z-index: 2;
 }
