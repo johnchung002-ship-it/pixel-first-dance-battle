@@ -3,7 +3,7 @@ const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 const CANVAS_W = 480, CANVAS_H = 640;
 
 const HITLINE_Y = 520;
-const ARROW_SIZE = 48;
+const ARROW_SIZE = 64; // Slightly larger to match sprite proportions
 const LANE_WIDTH = CANVAS_W / LANES.length;
 
 const BPM = 140;
@@ -15,9 +15,7 @@ const HIT_WINDOW_PERFECT = 0.08;
 const HIT_WINDOW_GOOD = 0.15;
 
 const ARROW_SPEED = 400;
-const BEAT_INTERVAL = 60 / BPM; // for beat pulse
-
-const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
+const BEAT_INTERVAL = 60 / BPM;
 /******************/
 
 // Prevent arrow keys from scrolling
@@ -67,6 +65,19 @@ let comboAnimStart = 0;
 
 canvas.width = CANVAS_W;
 canvas.height = CANVAS_H;
+
+/* --- Load Arrow Sprites --- */
+const arrowSprites = {
+  left: new Image(),
+  down: new Image(),
+  up: new Image(),
+  right: new Image(),
+};
+
+arrowSprites.left.src = "arrow_left.png";
+arrowSprites.down.src = "arrow_down.png";
+arrowSprites.up.src = "arrow_up.png";
+arrowSprites.right.src = "arrow_right.png";
 
 /* ---------------- Core ---------------- */
 
@@ -243,8 +254,8 @@ function draw() {
   // Combo text with beat pulse
   if (combo > 0) {
     const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
-    const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2); // ~8% pulse
-    const beatGlow = 12 + 8 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2; // 12 to 20 glow
+    const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2);
+    const beatGlow = 12 + 8 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
 
     ctx.save();
     ctx.translate(CANVAS_W / 2, HITLINE_Y + 60);
@@ -265,7 +276,6 @@ function draw() {
   ctx.textAlign = 'left';
 }
 
-/* --- Beat Pulse Receptor --- */
 function drawReceptor(ctx, lane) {
   const flashDuration = 150;
   const age = performance.now() - receptorFlash[lane];
@@ -274,80 +284,24 @@ function drawReceptor(ctx, lane) {
   const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
   const y = HITLINE_Y - ARROW_SIZE / 2;
 
-  // Beat pulse factor
-  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL; // 0-1
-  const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
-  const pulseGlow = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
-
   ctx.save();
   ctx.globalAlpha = alpha;
+
+  // Beat pulse effect
+  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+  const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
   ctx.translate(x + ARROW_SIZE / 2, y + ARROW_SIZE / 2);
   ctx.scale(pulseScale, pulseScale);
   ctx.translate(-ARROW_SIZE / 2, -ARROW_SIZE / 2);
-
-  ctx.shadowColor = '#fff';
-  ctx.shadowBlur = age < flashDuration ? 20 : pulseGlow;
 
   drawArrowSprite(ctx, 0, 0, ARROW_SIZE, lane);
   ctx.restore();
 }
 
 function drawArrowSprite(ctx, x, y, size, lane) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = LANE_COLORS[lane];
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  switch (lane) {
-    case 0:
-      ctx.moveTo(size, 0);
-      ctx.lineTo(0, size * 0.5);
-      ctx.lineTo(size, size);
-      ctx.lineTo(size * 0.7, size);
-      ctx.lineTo(size * 0.7, size * 0.65);
-      ctx.lineTo(size * 0.3, size * 0.65);
-      ctx.lineTo(size * 0.3, size * 0.35);
-      ctx.lineTo(size * 0.7, size * 0.35);
-      ctx.lineTo(size * 0.7, 0);
-      ctx.closePath();
-      break;
-    case 1:
-      ctx.moveTo(0, 0);
-      ctx.lineTo(size * 0.35, 0);
-      ctx.lineTo(size * 0.35, size * 0.3);
-      ctx.lineTo(size * 0.65, size * 0.3);
-      ctx.lineTo(size * 0.65, 0);
-      ctx.lineTo(size, 0);
-      ctx.lineTo(size * 0.5, size);
-      ctx.closePath();
-      break;
-    case 2:
-      ctx.moveTo(size * 0.5, 0);
-      ctx.lineTo(size, size);
-      ctx.lineTo(size * 0.65, size);
-      ctx.lineTo(size * 0.65, size * 0.7);
-      ctx.lineTo(size * 0.35, size * 0.7);
-      ctx.lineTo(size * 0.35, size);
-      ctx.lineTo(0, size);
-      ctx.closePath();
-      break;
-    case 3:
-      ctx.moveTo(0, 0);
-      ctx.lineTo(size, size * 0.5);
-      ctx.lineTo(0, size);
-      ctx.lineTo(size * 0.3, size);
-      ctx.lineTo(size * 0.3, size * 0.65);
-      ctx.lineTo(size * 0.7, size * 0.65);
-      ctx.lineTo(size * 0.7, size * 0.35);
-      ctx.lineTo(size * 0.3, size * 0.35);
-      ctx.lineTo(size * 0.3, 0);
-      ctx.closePath();
-      break;
-  }
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
+  const names = ['left', 'down', 'up', 'right'];
+  const img = arrowSprites[names[lane]];
+  ctx.drawImage(img, x, y, size, size);
 }
 
 /* ---------------- Loop ---------------- */
