@@ -37,7 +37,7 @@ body {
 #stage-wrap {
   border: 2px solid var(--lane-border);
   background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(5px); /* Adds blur effect */
+  backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   position: relative;
   overflow: hidden;
@@ -53,6 +53,30 @@ body {
   50% {
     filter: brightness(1.1);
   }
+}
+
+/* Bride & Groom background characters */
+.bg-characters {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  width: 100%;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1; /* Behind arrows but above background */
+  pointer-events: none;
+}
+
+.bg-char {
+  max-height: 100%;
+  animation: dance 1s infinite ease-in-out;
+}
+
+@keyframes dance {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 header h1 {
@@ -90,7 +114,6 @@ header h1 {
 
 .hidden { display: none !important; }
 
-/* Leaderboard */
 #leaderboardSection {
   margin-top: 12px;
   font-size: 10px;
@@ -100,7 +123,6 @@ header h1 {
   line-height: 1.6;
 }
 
-/* Modal */
 .modal {
   position: fixed;
   inset: 0;
@@ -146,7 +168,7 @@ header h1 {
   font-family: 'Press Start 2P', monospace;
 }
 
-/* Canvas above the background */
+/* Canvas above background characters */
 #gameCanvas {
   position: relative;
   z-index: 2;
