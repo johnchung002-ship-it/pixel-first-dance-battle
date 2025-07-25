@@ -15,6 +15,7 @@ const HIT_WINDOW_PERFECT = 0.08;
 const HIT_WINDOW_GOOD = 0.15;
 
 const ARROW_SPEED = 400;
+const BEAT_INTERVAL = 60 / BPM; // for beat pulse
 
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
 /******************/
@@ -260,24 +261,30 @@ function draw() {
   ctx.textAlign = 'left';
 }
 
+/* --- Beat Pulse Receptor --- */
 function drawReceptor(ctx, lane) {
   const flashDuration = 150;
   const age = performance.now() - receptorFlash[lane];
-  const alpha = age < flashDuration ? 1 : 0.8;
+  const alpha = age < flashDuration ? 1 : 0.85;
 
   const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
   const y = HITLINE_Y - ARROW_SIZE / 2;
 
+  // Beat pulse factor
+  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL; // 0-1
+  const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
+  const pulseGlow = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
+
   ctx.save();
   ctx.globalAlpha = alpha;
+  ctx.translate(x + ARROW_SIZE / 2, y + ARROW_SIZE / 2);
+  ctx.scale(pulseScale, pulseScale);
+  ctx.translate(-ARROW_SIZE / 2, -ARROW_SIZE / 2);
 
-  // Glow when flashing
-  if (age < flashDuration) {
-    ctx.shadowColor = '#ffffff';
-    ctx.shadowBlur = 15;
-  }
+  ctx.shadowColor = '#fff';
+  ctx.shadowBlur = age < flashDuration ? 20 : pulseGlow;
 
-  drawArrowSprite(ctx, x, y, ARROW_SIZE, lane);
+  drawArrowSprite(ctx, 0, 0, ARROW_SIZE, lane);
   ctx.restore();
 }
 
