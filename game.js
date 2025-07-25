@@ -1,26 +1,25 @@
 /***** CONFIG *****/
-const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight']; // matches column labels
+const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 const CANVAS_W = 480, CANVAS_H = 640;
 
 const HITLINE_Y = 520;
 const ARROW_SIZE = 48;
 const LANE_WIDTH = CANVAS_W / LANES.length;
 
-const BPM = 140;                 // Level Up ~140 BPM
-const NOTES_PER_BEAT = 2;        // 8th notes
-const SONG_OFFSET = 0.3;         // tweak if needed
-const SNIPPET_SECONDS = 30;      // your chorus snippet length
+const BPM = 140;
+const NOTES_PER_BEAT = 2;
+const SONG_OFFSET = 0.3;
+const SNIPPET_SECONDS = 30;
 
 const HIT_WINDOW_PERFECT = 0.08;
 const HIT_WINDOW_GOOD = 0.15;
 
 const ARROW_SPEED = 400;
 
-// Lane-specific colors (Left, Down, Up, Right)
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
 /******************/
 
-// Prevent arrow keys from scrolling the page
+// Prevent arrow keys from scrolling
 window.addEventListener(
   "keydown",
   function (e) {
@@ -50,7 +49,6 @@ const leaderboardEl = document.getElementById('leaderboard');
 
 let playing = false;
 let startTime = 0;
-
 let arrows = [];
 let active = [];
 let score = 0;
@@ -59,18 +57,11 @@ let totalNotes = 0;
 let combo = 0;
 let raf = null;
 
-// lane flash timestamps (ms) for hit feedback
 let laneHighlights = [0, 0, 0, 0];
-
-// receptor flash timestamps (ms) for receptor pads
 let receptorFlash = [0, 0, 0, 0];
-
-// Feedback text for PERFECT/GOOD/MISS
 let feedbackText = '';
 let feedbackColor = '#fff';
 let feedbackTime = 0;
-
-// Combo animation
 let comboAnimStart = 0;
 
 canvas.width = CANVAS_W;
@@ -82,9 +73,7 @@ function resetState() {
   score = 0;
   hits = 0;
   combo = 0;
-
   updateHUD();
-
   arrows = buildPatternForSnippet();
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
   totalNotes = arrows.length;
@@ -95,18 +84,14 @@ function resetState() {
 function startGame() {
   resetState();
   playing = true;
-
   retryBtn.classList.add('hidden');
   startBtn.classList.add('hidden');
   hideModal();
-
   startTime = performance.now() / 1000;
-
   if (bgm) {
     bgm.currentTime = 0;
     bgm.play().catch(err => console.warn('Music blocked:', err));
   }
-
   loop();
 }
 
@@ -114,7 +99,6 @@ function endGame() {
   playing = false;
   cancelAnimationFrame(raf);
   if (bgm) bgm.pause();
-
   finalScoreEl.textContent = score;
   retryBtn.classList.remove('hidden');
   showModal();
@@ -125,13 +109,9 @@ function buildPatternForSnippet() {
   const beat = 60 / BPM;
   const noteStep = beat / NOTES_PER_BEAT;
   const endTime = SONG_OFFSET + SNIPPET_SECONDS;
-
   for (let t = SONG_OFFSET; t <= endTime; t += noteStep) {
     if (Math.random() < 0.75) {
-      pattern.push({
-        lane: Math.floor(Math.random() * LANES.length),
-        t
-      });
+      pattern.push({ lane: Math.floor(Math.random() * LANES.length), t });
     }
   }
   return pattern;
@@ -182,10 +162,8 @@ function applyHit(arrow, result) {
   comboAnimStart = performance.now();
   hits++;
   feedbackTime = performance.now();
-
   laneHighlights[arrow.lane] = performance.now();
-  receptorFlash[arrow.lane] = performance.now(); // flash the receptor
-
+  receptorFlash[arrow.lane] = performance.now();
   updateHUD();
 }
 
@@ -215,16 +193,13 @@ function updateHUD() {
 function draw() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // lanes + labels + highlight
   const now = performance.now();
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
-
     if (now - laneHighlights[i] < 150) {
       ctx.fillStyle = 'rgba(0,255,150,0.2)';
       ctx.fillRect(x, 0, LANE_WIDTH, CANVAS_H);
     }
-
     ctx.strokeStyle = '#333';
     ctx.strokeRect(x, 0, LANE_WIDTH, CANVAS_H);
 
@@ -234,19 +209,19 @@ function draw() {
     ctx.fillText(label, x + (LANE_WIDTH / 2) - ctx.measureText(label).width / 2, 24);
   }
 
-  // hit line
+  // Hit line
   ctx.strokeStyle = '#888';
   ctx.beginPath();
   ctx.moveTo(0, HITLINE_Y);
   ctx.lineTo(CANVAS_W, HITLINE_Y);
   ctx.stroke();
 
-  // receptor pads
+  // Receptors (debug squares)
   for (let i = 0; i < LANES.length; i++) {
     drawReceptor(ctx, i);
   }
 
-  // falling arrows
+  // Falling arrows
   const t = getTime();
   for (const a of active) {
     if (a.judged) continue;
@@ -256,7 +231,7 @@ function draw() {
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
 
-  // Feedback text (PERFECT/GOOD/MISS)
+  // Feedback text
   if (feedbackText && now - feedbackTime < 300) {
     ctx.fillStyle = feedbackColor;
     ctx.font = '24px "Press Start 2P", monospace';
@@ -267,59 +242,49 @@ function draw() {
   // Combo pop animation
   if (combo > 0) {
     const elapsed = now - comboAnimStart;
-    if (elapsed < 600) { // show for 0.6s
+    if (elapsed < 600) {
       const progress = elapsed / 600;
       const scale = 1 + 0.5 * (1 - progress);
       const opacity = 1 - progress;
-
       ctx.save();
       ctx.translate(CANVAS_W / 2, HITLINE_Y + 60);
       ctx.scale(scale, scale);
       ctx.globalAlpha = opacity;
-
       ctx.fillStyle = '#00ff9d';
       ctx.font = '20px "Press Start 2P", monospace';
       ctx.textAlign = 'center';
       ctx.fillText(`${combo} Combo`, 0, 0);
-
       ctx.restore();
     }
   }
-  ctx.textAlign = 'left'; // reset
+  ctx.textAlign = 'left';
 }
 
-/**
- * Stationary receptor arrow at the hit line that flashes on hit.
- */
 function drawReceptor(ctx, lane) {
-  const flashDuration = 150; // ms
+  const flashDuration = 150;
   const age = performance.now() - receptorFlash[lane];
   const alpha = age < flashDuration ? 1 : 0.7;
 
   const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
-  const y = HITLINE_Y - ARROW_SIZE / 2; // center receptors on hit line
+  const y = HITLINE_Y - ARROW_SIZE / 2;
 
   ctx.save();
   ctx.globalAlpha = alpha;
-  drawArrowSprite(ctx, x, y, ARROW_SIZE, lane);
+  // Debug white square
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x, y, ARROW_SIZE, ARROW_SIZE);
   ctx.restore();
 }
 
-/**
- * Draw each arrow with a fixed shape per lane (no rotation) so lanes match labels.
- * x, y are TOP-LEFT coords.
- */
 function drawArrowSprite(ctx, x, y, size, lane) {
   ctx.save();
   ctx.translate(x, y);
-
   ctx.fillStyle = LANE_COLORS[lane];
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 2;
   ctx.beginPath();
-
   switch (lane) {
-    case 0: // Left
+    case 0:
       ctx.moveTo(size, 0);
       ctx.lineTo(0, size * 0.5);
       ctx.lineTo(size, size);
@@ -331,8 +296,7 @@ function drawArrowSprite(ctx, x, y, size, lane) {
       ctx.lineTo(size * 0.7, 0);
       ctx.closePath();
       break;
-
-    case 1: // Down
+    case 1:
       ctx.moveTo(0, 0);
       ctx.lineTo(size * 0.35, 0);
       ctx.lineTo(size * 0.35, size * 0.3);
@@ -342,8 +306,7 @@ function drawArrowSprite(ctx, x, y, size, lane) {
       ctx.lineTo(size * 0.5, size);
       ctx.closePath();
       break;
-
-    case 2: // Up
+    case 2:
       ctx.moveTo(size * 0.5, 0);
       ctx.lineTo(size, size);
       ctx.lineTo(size * 0.65, size);
@@ -353,8 +316,7 @@ function drawArrowSprite(ctx, x, y, size, lane) {
       ctx.lineTo(0, size);
       ctx.closePath();
       break;
-
-    case 3: // Right
+    case 3:
       ctx.moveTo(0, 0);
       ctx.lineTo(size, size * 0.5);
       ctx.lineTo(0, size);
@@ -367,33 +329,27 @@ function drawArrowSprite(ctx, x, y, size, lane) {
       ctx.closePath();
       break;
   }
-
   ctx.fill();
   ctx.stroke();
   ctx.restore();
 }
 
 /* ---------------- Loop ---------------- */
-
 function loop() {
   if (!playing) return;
-
   missOldArrows();
   draw();
   updateHUD();
-
   const t = getTime();
   const endTime = SONG_OFFSET + SNIPPET_SECONDS + 0.5;
   if (active.every(a => a.judged) || t > endTime) {
     endGame();
     return;
   }
-
   raf = requestAnimationFrame(loop);
 }
 
 /* ---------------- Leaderboard ---------------- */
-
 function showModal() {
   scoreModal.classList.remove('hidden');
 }
@@ -415,7 +371,6 @@ function displayLeaderboard(data) {
 displayLeaderboard(JSON.parse(localStorage.getItem('leaderboard') || '[]'));
 
 /* ---------------- Events ---------------- */
-
 document.addEventListener('keydown', (e) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
     if (playing) judgeHit(e.key);
