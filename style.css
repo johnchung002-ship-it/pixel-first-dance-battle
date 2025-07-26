@@ -44,6 +44,13 @@ body {
   box-shadow: 0 0 16px rgba(0,0,0,0.6);
   margin-bottom: 16px;
   animation: pulse-floor 1.07s infinite ease-in-out;
+  width: 100%;         /* responsive */
+  max-width: 480px;    /* desktop limit */
+}
+
+#gameCanvas {
+  width: 100%;
+  height: auto;        /* maintains aspect ratio */
 }
 
 @keyframes pulse-floor {
@@ -54,7 +61,7 @@ body {
 header h1 {
   text-align: center;
   margin: 8px 0 12px;
-  font-size: 20px;        /* default size */
+  font-size: 20px;        /* default */
   letter-spacing: 1px;
   white-space: nowrap;    /* keep on one line */
   color: #fff;
@@ -257,4 +264,32 @@ header h1 {
 #gameCanvas {
   position: relative;
   z-index: 2;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 480px) {
+  #hud {
+    font-size: 10px;
+    gap: 8px;
+  }
+  #hud span {
+    padding: 4px 6px;
+    border-width: 1px;
+  }
+  #hud button {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  #messageBoardSection h2 {
+    font-size: 12px;
+  }
+  .modal-content input,
+  .modal-content textarea {
+    font-size: 12px;
+    padding: 6px;
+  }
+  .modal-buttons button {
+    font-size: 10px;
+    padding: 8px 10px;
+  }
 }
