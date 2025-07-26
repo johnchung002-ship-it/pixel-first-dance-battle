@@ -380,16 +380,12 @@ function getBoard() {
   }
 }
 
-function saveBoard(board) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(board));
-}
-
 function saveScore() {
   const initials = initialsInput.value.toUpperCase().trim();
-  const message = (guestMessageInput?.value || '').trim();
+  // Preserve single spaces, trim only leading/trailing
+  const message = (guestMessageInput?.value || '').replace(/\s+/g, ' ').trim();
 
   const board = getBoard();
-  // always allow empty initials/message, but you can enforce if you want
   board.push({
     initials: initials || '---',
     score,
@@ -397,11 +393,10 @@ function saveScore() {
     ts: Date.now()
   });
 
-  // sort by score desc, then by ts asc
   board.sort((a, b) => b.score - a.score || a.ts - b.ts);
   saveBoard(board.slice(0, MAX_ROWS));
 
-  displayBoard(); // refresh visible table
+  displayBoard();
   hideModal();
 }
 
