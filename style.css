@@ -54,14 +54,17 @@ body {
 header h1 {
   text-align: center;
   margin: 8px 0 12px;
-  font-size: 24px;
+  font-size: 20px;           /* reduced font size */
+  letter-spacing: 1px;       /* slightly reduced spacing */
+  transform: scale(0.95);    /* minor scale to fit one line */
   color: #fff;
   text-shadow:
-    2px 2px 0 #c29e57,
+    2px 2px 0 #c29e57,       /* gold outline */
     -2px -2px 0 #c29e57,
     2px -2px 0 #c29e57,
     -2px 2px 0 #c29e57;
 }
+
 
 /* HUD Wedding Theme with Pixel-Pill Boxes */
 #hud {
