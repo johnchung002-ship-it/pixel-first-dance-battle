@@ -17,7 +17,7 @@
 
 body {
   margin: 0;
-  background: #000 url('ebell_bg-sch.png') center center / cover no-repeat fixed;
+  background: #000 url('ebell_bg-sch-version-1.png') center center / cover no-repeat fixed;
   color: var(--fg);
   display: flex;
   justify-content: center;
