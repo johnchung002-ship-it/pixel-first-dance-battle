@@ -18,6 +18,9 @@ const ARROW_SPEED = 400;
 const BEAT_INTERVAL = 60 / BPM; // for beat pulse
 
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
+
+const STORAGE_KEY = 'messageBoard';   // <-- new
+const MAX_ROWS = 50;                  // keep top N by score
 /******************/
 
 // Prevent arrow keys from scrolling
@@ -46,7 +49,9 @@ const finalScoreEl = document.getElementById('finalScore');
 const submitScoreBtn = document.getElementById('submitScoreBtn');
 const skipSubmitBtn = document.getElementById('skipSubmitBtn');
 const initialsInput = document.getElementById('initials');
-const leaderboardEl = document.getElementById('leaderboard');
+const guestMessageInput = document.getElementById('guestMessage'); // <-- new
+
+const messageBoardBody = document.querySelector('#messageBoard tbody'); // <-- new
 
 let playing = false;
 let startTime = 0;
@@ -65,7 +70,7 @@ let feedbackColor = '#fff';
 let feedbackTime = 0;
 let comboAnimStart = 0;
 
-// NEW: hit flash ring effects
+// hit flash ring effects
 let hitFlashes = [];
 
 canvas.width = CANVAS_W;
@@ -183,7 +188,7 @@ function applyHit(arrow, result) {
   laneHighlights[arrow.lane] = performance.now();
   receptorFlash[arrow.lane] = performance.now();
 
-  // NEW: push a hit flash for this lane
+  // hit flash ring
   hitFlashes.push({ lane: arrow.lane, start: performance.now() });
 
   updateHUD();
@@ -253,7 +258,7 @@ function draw() {
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
 
-  // NEW: draw hit flashes (after arrows/receptors so they appear on top)
+  // hit flashes on top
   drawHitFlashes();
 
   // Feedback text
@@ -362,22 +367,67 @@ function loop() {
   raf = requestAnimationFrame(loop);
 }
 
-/* ---------------- Leaderboard ---------------- */
+/* ---------------- Message Board / Leaderboard Hybrid ---------------- */
+
 function showModal() { scoreModal.classList.remove('hidden'); }
 function hideModal() { scoreModal.classList.add('hidden'); }
+
+function getBoard() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveBoard(board) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(board));
+}
+
 function saveScore() {
   const initials = initialsInput.value.toUpperCase().trim();
-  const leaderboard = JSON.parse(localStorage.getItem('leaderboard') || '[]');
-  if (initials) leaderboard.push({ initials, score });
-  leaderboard.sort((a, b) => b.score - a.score);
-  localStorage.setItem('leaderboard', JSON.stringify(leaderboard.slice(0, 10)));
-  displayLeaderboard(leaderboard);
+  const message = (guestMessageInput?.value || '').trim();
+
+  const board = getBoard();
+  // always allow empty initials/message, but you can enforce if you want
+  board.push({
+    initials: initials || '---',
+    score,
+    message,
+    ts: Date.now()
+  });
+
+  // sort by score desc, then by ts asc
+  board.sort((a, b) => b.score - a.score || a.ts - b.ts);
+  saveBoard(board.slice(0, MAX_ROWS));
+
+  displayBoard(); // refresh visible table
   hideModal();
 }
-function displayLeaderboard(data) {
-  leaderboardEl.innerHTML = data.map(e => `<li>${e.initials}: ${e.score}</li>`).join('');
+
+function displayBoard() {
+  const board = getBoard();
+  if (!messageBoardBody) return;
+
+  messageBoardBody.innerHTML = board
+    .map((e, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${escapeHTML(e.initials)}</td>
+        <td>${e.score}</td>
+        <td>${escapeHTML(e.message || '')}</td>
+      </tr>
+    `)
+    .join('');
 }
-displayLeaderboard(JSON.parse(localStorage.getItem('leaderboard') || '[]'));
+
+// very small helper to avoid HTML injection in messages
+function escapeHTML(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 /* ---------------- Events ---------------- */
 document.addEventListener('keydown', (e) => {
@@ -390,3 +440,6 @@ startBtn.addEventListener('click', startGame);
 retryBtn.addEventListener('click', startGame);
 submitScoreBtn.addEventListener('click', saveScore);
 skipSubmitBtn.addEventListener('click', hideModal);
+
+// initial render of existing board on page load
+displayBoard();
