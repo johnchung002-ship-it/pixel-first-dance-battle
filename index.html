@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pixel First Dance Battle</title>
+  <title>Choom Choom Reception</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,16 +11,18 @@
   <div id="game-root">
     <header>
       <h1>💍 Choom Choom Reception 💍</h1>
-     <div id="hud">
-  <span class="score-label">Score: <strong id="score">0</strong></span>
-  <span class="combo-label">Combo: <strong id="combo">0</strong></span>
-  <span class="accuracy-label">Accuracy: <strong id="accuracy">100%</strong></span>
-  <button id="startBtn">Start</button>
-  <button id="retryBtn" class="hidden">Retry</button>
-</div>
 
+      <!-- HUD with Pixel-Pill Boxes -->
+      <div id="hud">
+        <span class="score-label">Score: <strong id="score">0</strong></span>
+        <span class="combo-label">Combo: <strong id="combo">0</strong></span>
+        <span class="accuracy-label">Accuracy: <strong id="accuracy">100%</strong></span>
+        <button id="startBtn">Start</button>
+        <button id="retryBtn" class="hidden">Retry</button>
+      </div>
     </header>
 
+    <!-- Game Stage -->
     <div id="stage-wrap">
       <canvas id="gameCanvas" width="480" height="640"></canvas>
     </div>
