@@ -159,22 +159,23 @@ header h1 {
 /* Mobile Controls */
 #mobile-controls {
   display: none;
-  justify-content: space-around;
+  justify-content: space-between;
   margin: 10px 0 20px;
-  gap: 10px;
+  gap: 6px;
 }
 
 #mobile-controls button {
+  flex: 1;
+  min-width: 0;
   font-family: 'Press Start 2P', monospace;
-  font-size: 20px;
-  padding: 12px 16px;
+  font-size: 18px;
+  padding: 12px 8px;
   border: 2px solid #FFD700;
   background: rgba(0, 0, 0, 0.5);
   color: #FFD700;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 60px;
 }
 
 #mobile-controls button:hover {
@@ -186,7 +187,7 @@ header h1 {
 @media (max-width: 600px) {
   #mobile-controls {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* keep them in one row */
   }
 }
 
