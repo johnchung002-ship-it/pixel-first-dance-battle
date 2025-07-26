@@ -44,13 +44,6 @@ body {
   box-shadow: 0 0 16px rgba(0,0,0,0.6);
   margin-bottom: 16px;
   animation: pulse-floor 1.07s infinite ease-in-out;
-  width: 100%;
-  max-width: 480px;
-}
-
-#gameCanvas {
-  width: 100%;
-  height: auto;
 }
 
 @keyframes pulse-floor {
@@ -63,35 +56,19 @@ header h1 {
   margin: 8px 0 12px;
   font-size: 20px;
   letter-spacing: 1px;
-  white-space: nowrap;
   color: #fff;
   text-shadow:
     2px 2px 0 #c29e57,
     -2px -2px 0 #c29e57,
     2px -2px 0 #c29e57,
     -2px 2px 0 #c29e57;
-  transition: font-size 0.2s ease;
 }
 
-@media (max-width: 600px) {
-  header h1 {
-    font-size: 18px;
-    letter-spacing: 0.5px;
-  }
-}
-
-@media (max-width: 400px) {
-  header h1 {
-    font-size: 16px;
-    letter-spacing: 0;
-  }
-}
-
-/* HUD Wedding Theme with Pixel-Pill Boxes */
+/* HUD Wedding Theme */
 #hud {
   display: flex;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 12px;
   justify-content: center;
   align-items: center;
   margin-bottom: 8px;
@@ -108,21 +85,19 @@ header h1 {
   text-transform: uppercase;
 }
 
-/* Gold for Score */
+/* Score, Combo, Accuracy Colors */
 .score-label {
   border-color: #FFD700;
   background: rgba(255, 215, 0, 0.12);
   color: #FFD700;
 }
 
-/* Pink for Combo */
 .combo-label {
   border-color: #FF69B4;
   background: rgba(255, 105, 180, 0.12);
   color: #FF69B4;
 }
 
-/* Ivory for Accuracy */
 .accuracy-label {
   border-color: #FFF8DC;
   background: rgba(255, 248, 220, 0.12);
@@ -153,6 +128,31 @@ header h1 {
   color: #fff;
   text-shadow: 0 0 4px rgba(255,255,255,0.7);
   transform: scale(1.05);
+}
+
+/* Difficulty Dropdown */
+.difficulty-label {
+  font-size: 10px;
+  color: #FFD700;
+  text-shadow: 0 0 3px #c29e57;
+}
+
+#difficultySelect {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #4b2e2e;
+  background: #FFD700;
+  border: 2px solid #c29e57;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#difficultySelect:hover {
+  background: #FF69B4;
+  color: #fff;
+  border-color: #d1588f;
 }
 
 .hidden { display: none !important; }
@@ -197,6 +197,7 @@ header h1 {
   word-break: break-word;
 }
 
+/* Modal */
 .modal {
   position: fixed;
   inset: 0;
@@ -259,81 +260,39 @@ header h1 {
   transform: scale(1.05);
 }
 
-/* Mobile Controls - Improved Pixel Style */
+/* Mobile Controls */
 #mobile-controls {
-  display: flex;
+  display: none;
   justify-content: center;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 6px;
+  margin: 10px 0;
 }
 
 #mobile-controls button {
-  font-size: 24px;
-  padding: 14px 18px;
-  background: #222;
-  border: 3px solid #FFD700;
-  border-radius: 8px;
-  color: #FFD700;
   font-family: 'Press Start 2P', monospace;
+  font-size: 16px;
+  padding: 10px;
+  border: 2px solid #FFD700;
+  background: rgba(0, 0, 0, 0.5);
+  color: #FFD700;
+  border-radius: 6px;
   cursor: pointer;
-  text-shadow: 1px 1px 0 #000;
-  box-shadow: 0 4px 0 #c29e57, 0 6px 8px rgba(0, 0, 0, 0.4);
-  transition: all 0.15s ease-in-out;
+  transition: all 0.2s ease;
 }
 
 #mobile-controls button:hover {
-  background: #FFD700;
-  color: #222;
-  border-color: #c29e57;
-  box-shadow: 0 3px 0 #9c7d3c, 0 4px 6px rgba(0, 0, 0, 0.4);
-  transform: translateY(-2px);
+  background: #FF69B4;
+  border-color: #d1588f;
+  color: #fff;
 }
 
-#mobile-controls button:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 #9c7d3c;
-}
-
-/* Hide mobile controls on larger screens */
-@media (min-width: 601px) {
+@media (max-width: 600px) {
   #mobile-controls {
-    display: none;
+    display: flex;
   }
 }
 
-/* Mobile Optimizations */
-@media (max-width: 480px) {
-  #hud {
-    font-size: 10px;
-    gap: 8px;
-  }
-  #hud span {
-    padding: 4px 6px;
-    border-width: 1px;
-  }
-  #hud button {
-    padding: 4px 8px;
-    font-size: 10px;
-  }
-  #messageBoardSection h2 {
-    font-size: 12px;
-  }
-  .modal-content input,
-  .modal-content textarea {
-    font-size: 12px;
-    padding: 6px;
-  }
-  .modal-buttons button {
-    font-size: 10px;
-    padding: 8px 10px;
-  }
-}
-
-/* Stack HUD on small screens */
-@media (max-width: 400px) {
-  #hud {
-    flex-direction: column;
-    gap: 6px;
-    align-items: center;
-  }
+#gameCanvas {
+  position: relative;
+  z-index: 2;
 }
