@@ -2,37 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Choom Choom Reception</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pixel First Dance Battle</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <!-- Game Root -->
   <div id="game-root">
     <header>
-      <h1>💍Choom Choom Reception💍</h1>
-
-      <!-- HUD with Pixel-Pill Boxes -->
+      <h1>💍 Choom Choom Reception 💍</h1>
       <div id="hud">
         <span class="score-label">Score: <strong id="score">0</strong></span>
         <span class="combo-label">Combo: <strong id="combo">0</strong></span>
         <span class="accuracy-label">Accuracy: <strong id="accuracy">100%</strong></span>
+
+        <!-- Difficulty Selector -->
+        <label for="difficultySelect" class="difficulty-label">Difficulty:</label>
+        <select id="difficultySelect">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+
         <button id="startBtn">Start</button>
         <button id="retryBtn" class="hidden">Retry</button>
       </div>
     </header>
 
-    <!-- Game Stage -->
     <div id="stage-wrap">
       <canvas id="gameCanvas" width="480" height="640"></canvas>
-    </div>
-
-    <!-- Mobile Controls -->
-    <div id="mobile-controls">
-      <button data-key="ArrowLeft">⬅️</button>
-      <button data-key="ArrowDown">⬇️</button>
-      <button data-key="ArrowUp">⬆️</button>
-      <button data-key="ArrowRight">➡️</button>
     </div>
 
     <!-- Message Board Section -->
@@ -52,6 +50,14 @@
         </tbody>
       </table>
     </section>
+
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+      <button data-key="ArrowLeft">⬅️</button>
+      <button data-key="ArrowDown">⬇️</button>
+      <button data-key="ArrowUp">⬆️</button>
+      <button data-key="ArrowRight">➡️</button>
+    </div>
   </div>
 
   <!-- Music -->
