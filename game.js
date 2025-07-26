@@ -15,7 +15,7 @@ const SNIPPET_SECONDS = 30;
 // Defaults (Normal)
 let HIT_WINDOW_PERFECT = 0.08;
 let HIT_WINDOW_GOOD    = 0.15;
-let ARROW_SPEED        = 400;
+let ARROW_SPEED        = 350;
 
 const BEAT_INTERVAL = 60 / BPM;
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
