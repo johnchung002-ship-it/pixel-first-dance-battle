@@ -23,16 +23,27 @@ const STORAGE_KEY = 'messageBoard';
 const MAX_ROWS = 50;
 /******************/
 
-// DOM elements
+// Prevent arrow keys from scrolling page
+window.addEventListener(
+  "keydown",
+  function (e) {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+      e.preventDefault();
+    }
+  },
+  { passive: false }
+);
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const bgm = document.getElementById('bgm');
+
 const scoreEl = document.getElementById('score');
 const comboEl = document.getElementById('combo');
 const accuracyEl = document.getElementById('accuracy');
 const startBtn = document.getElementById('startBtn');
 const retryBtn = document.getElementById('retryBtn');
-const difficultySelect = document.getElementById('difficultySelect'); // new
+const difficultySelect = document.getElementById('difficultySelect'); // <- dropdown
 
 const scoreModal = document.getElementById('scoreModal');
 const finalScoreEl = document.getElementById('finalScore');
@@ -40,6 +51,7 @@ const submitScoreBtn = document.getElementById('submitScoreBtn');
 const skipSubmitBtn = document.getElementById('skipSubmitBtn');
 const initialsInput = document.getElementById('initials');
 const guestMessageInput = document.getElementById('guestMessage');
+
 const messageBoardBody = document.querySelector('#messageBoard tbody');
 
 let playing = false;
@@ -58,7 +70,11 @@ let feedbackText = '';
 let feedbackColor = '#fff';
 let feedbackTime = 0;
 let comboAnimStart = 0;
+
 let hitFlashes = [];
+
+canvas.width = CANVAS_W;
+canvas.height = CANVAS_H;
 
 /* --- Load Arrow Sprites --- */
 const arrowSprites = {
@@ -67,13 +83,12 @@ const arrowSprites = {
   up: new Image(),
   right: new Image(),
 };
-
 arrowSprites.left.src = "arrow_left.png";
 arrowSprites.down.src = "arrow_down.png";
 arrowSprites.up.src = "arrow_up.png";
 arrowSprites.right.src = "arrow_right.png";
 
-/* ---------------- Difficulty Settings ---------------- */
+/* ---------------- Difficulty ---------------- */
 function setDifficulty(mode) {
   if (mode === 'easy') {
     ARROW_SPEED = 300;
@@ -83,20 +98,43 @@ function setDifficulty(mode) {
     ARROW_SPEED = 480;
     HIT_WINDOW_PERFECT = 0.06;
     HIT_WINDOW_GOOD = 0.12;
-  } else { // normal
+  } else {
+    // normal
     ARROW_SPEED = 400;
     HIT_WINDOW_PERFECT = 0.08;
     HIT_WINDOW_GOOD = 0.15;
   }
 }
 
-// Auto-select Easy for mobile
+// Auto-select Easy for mobile (but allow changing manually)
 if (/Mobi|Android/i.test(navigator.userAgent)) {
   setDifficulty('easy');
   if (difficultySelect) difficultySelect.value = 'easy';
+} else {
+  setDifficulty(difficultySelect ? difficultySelect.value : 'normal');
+}
+
+/* --- Prevent dropdown stealing focus during gameplay --- */
+function lockDifficultySelect() {
+  if (difficultySelect) {
+    difficultySelect.setAttribute('tabindex', '-1');
+    difficultySelect.blur();
+    // Also ignore keydown while playing
+    difficultySelect.addEventListener('keydown', blockWhilePlaying);
+  }
+}
+function unlockDifficultySelect() {
+  if (difficultySelect) {
+    difficultySelect.removeAttribute('tabindex');
+    difficultySelect.removeEventListener('keydown', blockWhilePlaying);
+  }
+}
+function blockWhilePlaying(e) {
+  if (playing) e.preventDefault();
 }
 
 /* ---------------- Core ---------------- */
+
 function resetState() {
   score = 0;
   hits = 0;
@@ -112,6 +150,7 @@ function resetState() {
 
 function startGame() {
   resetState();
+  lockDifficultySelect();  // <— prevent focus & key changes
   playing = true;
   retryBtn.classList.add('hidden');
   startBtn.classList.add('hidden');
@@ -126,6 +165,7 @@ function startGame() {
 
 function endGame() {
   playing = false;
+  unlockDifficultySelect(); // <— allow editing again
   cancelAnimationFrame(raf);
   if (bgm) bgm.pause();
   finalScoreEl.textContent = score;
@@ -265,7 +305,7 @@ function draw() {
   // hit flashes on top
   drawHitFlashes();
 
-  // Feedback text
+  // Feedback
   if (feedbackText && now - feedbackTime < 300) {
     ctx.fillStyle = feedbackColor;
     ctx.font = '24px "Press Start 2P", monospace';
@@ -425,7 +465,7 @@ function escapeHTML(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/ /g, '&nbsp;');
+    .replace(/ /g, '&nbsp;'); // keep visible spaces
 }
 
 /* ---------------- Events ---------------- */
@@ -454,4 +494,5 @@ document.querySelectorAll('#mobile-controls button').forEach(btn => {
   });
 });
 
+// initial board render
 displayBoard();
