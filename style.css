@@ -322,3 +322,44 @@ header h1 {
   position: relative;
   z-index: 2;
 }
+/* -------------------------
+   Mobile UX fixes (2025-07-26)
+   ------------------------- */
+
+/* Stop iOS from auto-scaling text (which triggers zoom) and improve touch */
+html, body {
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+/* Ensure all tappable form elements are >=16px on mobile to prevent zoom */
+@media (max-width: 768px) {
+  input, textarea, select, button {
+    font-size: 16px;
+  }
+}
+
+/* Mobile control buttons */
+#mobile-controls {
+  text-align: center;
+  padding: 10px 0;
+}
+
+#mobile-controls button {
+  font-size: 18px;              /* >=16px prevents Safari zoom */
+  touch-action: manipulation;   /* Avoids double-tap zoom */
+  padding: 10px 15px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  background: #333;
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.08s ease;
+}
+
+#mobile-controls button:active {
+  background: #555;
+  transform: scale(0.96);
+}
