@@ -24,11 +24,18 @@ const STORAGE_KEY = 'messageBoard';
 const MAX_ROWS = 50;
 /******************/
 
-// Prevent arrow keys from scrolling page
+// Prevent arrow keys / space from scrolling the page **unless typing in inputs**
 window.addEventListener(
   "keydown",
   function (e) {
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+    const isTypingElement =
+      document.activeElement &&
+      (document.activeElement.tagName === 'INPUT' ||
+       document.activeElement.tagName === 'TEXTAREA' ||
+       document.activeElement.isContentEditable);
+
+    if (!isTypingElement &&
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
       e.preventDefault();
     }
   },
@@ -91,8 +98,6 @@ arrowSprites.right.src = "arrow_right.png";
 
 /* ---------------- Responsive Canvas (optional but future-proof) ---------------- */
 function resizeCanvasIfNeeded() {
-  // If you later decide to make it fully responsive, plug logic here.
-  // For now we keep fixed logical size to avoid reworking all math.
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
   LANE_WIDTH = CANVAS_W / LANES.length;
@@ -158,8 +163,8 @@ function startGame() {
   resetState();
   lockDifficultySelect();
   playing = true;
-  retryBtn.classList.add('hidden');
-  startBtn.classList.add('hidden');
+  retryBtn?.classList.add('hidden');
+  startBtn?.classList.add('hidden');
   hideModal();
 
   // Set start time right now; arrows won’t reach screen until SONG_OFFSET anyway
@@ -180,8 +185,8 @@ function endGame() {
   unlockDifficultySelect();
   cancelAnimationFrame(raf);
   if (bgm) bgm.pause();
-  finalScoreEl.textContent = score;
-  retryBtn.classList.remove('hidden');
+  if (finalScoreEl) finalScoreEl.textContent = score;
+  retryBtn?.classList.remove('hidden');
   showModal();
 }
 
@@ -265,10 +270,10 @@ function missOldArrows() {
 }
 
 function updateHUD() {
-  scoreEl.textContent = score;
-  comboEl.textContent = combo;
+  if (scoreEl) scoreEl.textContent = score;
+  if (comboEl) comboEl.textContent = combo;
   const acc = totalNotes ? Math.round((hits / totalNotes) * 100) : 100;
-  accuracyEl.textContent = `${acc}%`;
+  if (accuracyEl) accuracyEl.textContent = `${acc}%`;
 }
 
 /* ---------------- Draw ---------------- */
@@ -470,8 +475,8 @@ function loop() {
 }
 
 /* ---------------- Message Board ---------------- */
-function showModal() { scoreModal.classList.remove('hidden'); }
-function hideModal() { scoreModal.classList.add('hidden'); }
+function showModal() { scoreModal?.classList.remove('hidden'); }
+function hideModal() { scoreModal?.classList.add('hidden'); }
 
 function getBoard() {
   try {
@@ -482,12 +487,24 @@ function getBoard() {
 }
 
 function saveBoard(board) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(board));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(board));
+  } catch (e) {
+    console.error('Failed to save board:', e);
+  }
 }
 
-function saveScore() {
-  const initials = initialsInput.value.toUpperCase().trim();
-  const message = (guestMessageInput?.value || '').trim();
+// **Fixed**: prevent form submit reload & allow spaces
+function saveScore(event) {
+  event?.preventDefault();
+
+  const initials = (initialsInput?.value || '').toUpperCase().trim(); // keep your uppercase style
+  const message  = (guestMessageInput?.value || '').trim();
+
+  if (!initials) {
+    alert('Please enter your name/initials.');
+    return;
+  }
 
   const board = getBoard();
   board.push({
@@ -520,12 +537,12 @@ function displayBoard() {
     .join('');
 }
 
+// **Fixed**: keep spaces as-is (no &nbsp;)
 function escapeHTML(str) {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/ /g, '&nbsp;'); // keep visible spaces
+    .replace(/>/g, '&gt;');
 }
 
 /* ---------------- Events ---------------- */
@@ -535,10 +552,16 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-startBtn.addEventListener('click', startGame);
-retryBtn.addEventListener('click', startGame);
-submitScoreBtn.addEventListener('click', saveScore);
-skipSubmitBtn.addEventListener('click', hideModal);
+startBtn?.addEventListener('click', startGame);
+retryBtn?.addEventListener('click', startGame);
+submitScoreBtn?.addEventListener('click', (e) => saveScore(e));
+skipSubmitBtn?.addEventListener('click', hideModal);
+
+// If your modal contains a <form>, prevent default submit as well
+const scoreForm = scoreModal?.querySelector('form');
+if (scoreForm) {
+  scoreForm.addEventListener('submit', (e) => saveScore(e));
+}
 
 if (difficultySelect) {
   difficultySelect.addEventListener('change', (e) => {
