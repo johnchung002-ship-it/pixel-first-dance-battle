@@ -11,38 +11,28 @@ const NOTES_PER_BEAT = 2;
 const SONG_OFFSET = 0.3;
 const SNIPPET_SECONDS = 30;
 
-const HIT_WINDOW_PERFECT = 0.08;
-const HIT_WINDOW_GOOD = 0.15;
+// Defaults (Normal)
+let HIT_WINDOW_PERFECT = 0.08;
+let HIT_WINDOW_GOOD = 0.15;
+let ARROW_SPEED = 400;
 
-const ARROW_SPEED = 400;
 const BEAT_INTERVAL = 60 / BPM;
-
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
 
 const STORAGE_KEY = 'messageBoard';
 const MAX_ROWS = 50;
 /******************/
 
-// Prevent arrow keys from scrolling
-window.addEventListener(
-  "keydown",
-  function (e) {
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
-      e.preventDefault();
-    }
-  },
-  { passive: false }
-);
-
+// DOM elements
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const bgm = document.getElementById('bgm');
-
 const scoreEl = document.getElementById('score');
 const comboEl = document.getElementById('combo');
 const accuracyEl = document.getElementById('accuracy');
 const startBtn = document.getElementById('startBtn');
 const retryBtn = document.getElementById('retryBtn');
+const difficultySelect = document.getElementById('difficultySelect'); // new
 
 const scoreModal = document.getElementById('scoreModal');
 const finalScoreEl = document.getElementById('finalScore');
@@ -50,7 +40,6 @@ const submitScoreBtn = document.getElementById('submitScoreBtn');
 const skipSubmitBtn = document.getElementById('skipSubmitBtn');
 const initialsInput = document.getElementById('initials');
 const guestMessageInput = document.getElementById('guestMessage');
-
 const messageBoardBody = document.querySelector('#messageBoard tbody');
 
 let playing = false;
@@ -69,11 +58,7 @@ let feedbackText = '';
 let feedbackColor = '#fff';
 let feedbackTime = 0;
 let comboAnimStart = 0;
-
 let hitFlashes = [];
-
-canvas.width = CANVAS_W;
-canvas.height = CANVAS_H;
 
 /* --- Load Arrow Sprites --- */
 const arrowSprites = {
@@ -88,8 +73,30 @@ arrowSprites.down.src = "arrow_down.png";
 arrowSprites.up.src = "arrow_up.png";
 arrowSprites.right.src = "arrow_right.png";
 
-/* ---------------- Core ---------------- */
+/* ---------------- Difficulty Settings ---------------- */
+function setDifficulty(mode) {
+  if (mode === 'easy') {
+    ARROW_SPEED = 300;
+    HIT_WINDOW_PERFECT = 0.12;
+    HIT_WINDOW_GOOD = 0.22;
+  } else if (mode === 'hard') {
+    ARROW_SPEED = 480;
+    HIT_WINDOW_PERFECT = 0.06;
+    HIT_WINDOW_GOOD = 0.12;
+  } else { // normal
+    ARROW_SPEED = 400;
+    HIT_WINDOW_PERFECT = 0.08;
+    HIT_WINDOW_GOOD = 0.15;
+  }
+}
 
+// Auto-select Easy for mobile
+if (/Mobi|Android/i.test(navigator.userAgent)) {
+  setDifficulty('easy');
+  if (difficultySelect) difficultySelect.value = 'easy';
+}
+
+/* ---------------- Core ---------------- */
 function resetState() {
   score = 0;
   hits = 0;
@@ -418,7 +425,7 @@ function escapeHTML(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/ /g, '&nbsp;');  // preserve visible spaces
+    .replace(/ /g, '&nbsp;');
 }
 
 /* ---------------- Events ---------------- */
@@ -432,6 +439,12 @@ startBtn.addEventListener('click', startGame);
 retryBtn.addEventListener('click', startGame);
 submitScoreBtn.addEventListener('click', saveScore);
 skipSubmitBtn.addEventListener('click', hideModal);
+
+if (difficultySelect) {
+  difficultySelect.addEventListener('change', (e) => {
+    setDifficulty(e.target.value);
+  });
+}
 
 // Mobile button controls
 document.querySelectorAll('#mobile-controls button').forEach(btn => {
