@@ -54,17 +54,33 @@ body {
 header h1 {
   text-align: center;
   margin: 8px 0 12px;
-  font-size: 20px;           /* reduced font size */
-  letter-spacing: 1px;       /* slightly reduced spacing */
-  transform: scale(0.95);    /* minor scale to fit one line */
+  font-size: 20px;        /* default size */
+  letter-spacing: 1px;
+  white-space: nowrap;    /* keep on one line */
   color: #fff;
   text-shadow:
-    2px 2px 0 #c29e57,       /* gold outline */
+    2px 2px 0 #c29e57,
     -2px -2px 0 #c29e57,
     2px -2px 0 #c29e57,
     -2px 2px 0 #c29e57;
+  transition: font-size 0.2s ease;
 }
 
+/* Responsive fallback for medium screens */
+@media (max-width: 600px) {
+  header h1 {
+    font-size: 18px;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* Responsive fallback for small screens */
+@media (max-width: 400px) {
+  header h1 {
+    font-size: 16px;
+    letter-spacing: 0;
+  }
+}
 
 /* HUD Wedding Theme with Pixel-Pill Boxes */
 #hud {
