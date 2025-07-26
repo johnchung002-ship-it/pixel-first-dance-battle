@@ -8,7 +8,7 @@ let LANE_WIDTH = CANVAS_W / LANES.length;
 
 const BPM = 140;
 const NOTES_PER_BEAT = 2;
-const SONG_OFFSET = 4.0; // 3...2...1...DANCE countdown
+const START_DELAY = 2.0; // NEW: 2-second pre-roll delay
 const SNIPPET_SECONDS = 30;
 
 const HIT_WINDOW_PERFECT = 0.08;
@@ -95,7 +95,7 @@ function startGame() {
 
   if (bgm) {
     bgm.currentTime = 0;
-    bgm.play().catch(err => console.warn('Music blocked:', err));
+    setTimeout(() => bgm.play().catch(err => console.warn('Music blocked:', err)), START_DELAY * 1000);
   }
   loop();
 }
@@ -113,8 +113,8 @@ function buildPatternForSnippet() {
   const pattern = [];
   const beat = 60 / BPM;
   const noteStep = beat / NOTES_PER_BEAT;
-  const endTime = SONG_OFFSET + SNIPPET_SECONDS;
-  for (let t = SONG_OFFSET; t <= endTime; t += noteStep) {
+  const endTime = SNIPPET_SECONDS;
+  for (let t = START_DELAY; t <= endTime + START_DELAY; t += noteStep) {
     if (Math.random() < 0.75) {
       pattern.push({ lane: Math.floor(Math.random() * LANES.length), t });
     }
@@ -224,22 +224,6 @@ function draw() {
     ctx.textAlign = 'center';
     ctx.fillText(feedbackText, CANVAS_W / 2, HITLINE_Y - 40);
   }
-
-  // Countdown
-  drawCountdownOverlay(t);
-}
-
-function drawCountdownOverlay(t) {
-  if (t < SONG_OFFSET) {
-    const remaining = Math.ceil(SONG_OFFSET - t);
-    const text = remaining > 1 ? remaining : 'DANCE!';
-    ctx.save();
-    ctx.font = '36px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#FFD700';
-    ctx.fillText(text, CANVAS_W / 2, CANVAS_H / 3);
-    ctx.restore();
-  }
 }
 
 function drawArrowSprite(ctx, x, y, size, lane) {
@@ -255,7 +239,7 @@ function loop() {
   draw();
   updateHUD();
   const t = getTime();
-  const endTime = SONG_OFFSET + SNIPPET_SECONDS + 0.5;
+  const endTime = START_DELAY + SNIPPET_SECONDS + 0.5;
   if (active.every(a => a.judged) || t > endTime) {
     endGame();
     return;
@@ -315,13 +299,13 @@ function displayBoard() {
 function escapeHTML(str) {
   return String(str)
     .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
+    .replace(/</g, '&lt;/g)
     .replace(/>/g, '&gt;');
 }
 
 /* ---------------- Events ---------------- */
 document.addEventListener('keydown', (e) => {
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+  if (LANES.includes(e.key)) {
     if (playing) judgeHit(e.key);
   }
 });
