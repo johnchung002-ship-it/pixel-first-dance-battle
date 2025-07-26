@@ -1,20 +1,21 @@
 /***** CONFIG *****/
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
-const CANVAS_W = 480, CANVAS_H = 640;
+let   CANVAS_W = 480, CANVAS_H = 640;
 
 const HITLINE_Y = 520;
 const ARROW_SIZE = 64;
-const LANE_WIDTH = CANVAS_W / LANES.length;
+let   LANE_WIDTH = CANVAS_W / LANES.length;
 
 const BPM = 140;
 const NOTES_PER_BEAT = 2;
-const SONG_OFFSET = 1.5;
+/** 4 seconds for 3-2-1-DANCE countdown **/
+const SONG_OFFSET = 4.0;
 const SNIPPET_SECONDS = 30;
 
 // Defaults (Normal)
 let HIT_WINDOW_PERFECT = 0.08;
-let HIT_WINDOW_GOOD = 0.15;
-let ARROW_SPEED = 400;
+let HIT_WINDOW_GOOD    = 0.15;
+let ARROW_SPEED        = 400;
 
 const BEAT_INTERVAL = 60 / BPM;
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
@@ -43,7 +44,7 @@ const comboEl = document.getElementById('combo');
 const accuracyEl = document.getElementById('accuracy');
 const startBtn = document.getElementById('startBtn');
 const retryBtn = document.getElementById('retryBtn');
-const difficultySelect = document.getElementById('difficultySelect'); // <- dropdown
+const difficultySelect = document.getElementById('difficultySelect');
 
 const scoreModal = document.getElementById('scoreModal');
 const finalScoreEl = document.getElementById('finalScore');
@@ -65,16 +66,16 @@ let combo = 0;
 let raf = null;
 
 let laneHighlights = [0, 0, 0, 0];
-let receptorFlash = [0, 0, 0, 0];
-let feedbackText = '';
-let feedbackColor = '#fff';
-let feedbackTime = 0;
+let receptorFlash  = [0, 0, 0, 0];
+let feedbackText   = '';
+let feedbackColor  = '#fff';
+let feedbackTime   = 0;
 let comboAnimStart = 0;
 
 let hitFlashes = [];
 
-canvas.width = CANVAS_W;
-canvas.height = CANVAS_H;
+// Countdown state
+let showDanceUntil = 0;
 
 /* --- Load Arrow Sprites --- */
 const arrowSprites = {
@@ -83,55 +84,10 @@ const arrowSprites = {
   up: new Image(),
   right: new Image(),
 };
-arrowSprites.left.src = "arrow_left.png";
-arrowSprites.down.src = "arrow_down.png";
-arrowSprites.up.src = "arrow_up.png";
+arrowSprites.left.src  = "arrow_left.png";
+arrowSprites.down.src  = "arrow_down.png";
+arrowSprites.up.src    = "arrow_up.png";
 arrowSprites.right.src = "arrow_right.png";
-
-/* ---------------- Difficulty ---------------- */
-function setDifficulty(mode) {
-  if (mode === 'easy') {
-    ARROW_SPEED = 300;
-    HIT_WINDOW_PERFECT = 0.12;
-    HIT_WINDOW_GOOD = 0.22;
-  } else if (mode === 'hard') {
-    ARROW_SPEED = 480;
-    HIT_WINDOW_PERFECT = 0.06;
-    HIT_WINDOW_GOOD = 0.12;
-  } else {
-    // normal
-    ARROW_SPEED = 400;
-    HIT_WINDOW_PERFECT = 0.08;
-    HIT_WINDOW_GOOD = 0.15;
-  }
-}
-
-// Auto-select Easy for mobile (but allow changing manually)
-if (/Mobi|Android/i.test(navigator.userAgent)) {
-  setDifficulty('easy');
-  if (difficultySelect) difficultySelect.value = 'easy';
-} else {
-  setDifficulty(difficultySelect ? difficultySelect.value : 'normal');
-}
-
-/* --- Prevent dropdown stealing focus during gameplay --- */
-function lockDifficultySelect() {
-  if (difficultySelect) {
-    difficultySelect.setAttribute('tabindex', '-1');
-    difficultySelect.blur();
-    // Also ignore keydown while playing
-    difficultySelect.addEventListener('keydown', blockWhilePlaying);
-  }
-}
-function unlockDifficultySelect() {
-  if (difficultySelect) {
-    difficultySelect.removeAttribute('tabindex');
-    difficultySelect.removeEventListener('keydown', blockWhilePlaying);
-  }
-}
-function blockWhilePlaying(e) {
-  if (playing) e.preventDefault();
-}
 
 /* ---------------- Core ---------------- */
 
@@ -144,18 +100,21 @@ function resetState() {
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
   totalNotes = arrows.length;
   laneHighlights = [0, 0, 0, 0];
-  receptorFlash = [0, 0, 0, 0];
+  receptorFlash  = [0, 0, 0, 0];
   hitFlashes = [];
+  feedbackText = '';
 }
 
 function startGame() {
   resetState();
-  lockDifficultySelect();  // <— prevent focus & key changes
   playing = true;
   retryBtn.classList.add('hidden');
   startBtn.classList.add('hidden');
   hideModal();
+
   startTime = performance.now() / 1000;
+  showDanceUntil = performance.now() + 500; // Show DANCE! for 0.5s after final countdown
+
   if (bgm) {
     bgm.currentTime = 0;
     bgm.play().catch(err => console.warn('Music blocked:', err));
@@ -165,7 +124,6 @@ function startGame() {
 
 function endGame() {
   playing = false;
-  unlockDifficultySelect(); // <— allow editing again
   cancelAnimationFrame(raf);
   if (bgm) bgm.pause();
   finalScoreEl.textContent = score;
@@ -232,7 +190,7 @@ function applyHit(arrow, result) {
   hits++;
   feedbackTime = performance.now();
   laneHighlights[arrow.lane] = performance.now();
-  receptorFlash[arrow.lane] = performance.now();
+  receptorFlash[arrow.lane]  = performance.now();
 
   hitFlashes.push({ lane: arrow.lane, start: performance.now() });
   updateHUD();
@@ -265,6 +223,9 @@ function draw() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
   const now = performance.now();
+  const t = getTime();
+
+  // lanes
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
     if (now - laneHighlights[i] < 150) {
@@ -293,7 +254,6 @@ function draw() {
   }
 
   // Falling arrows
-  const t = getTime();
   for (const a of active) {
     if (a.judged) continue;
     const y = HITLINE_Y - (a.t - t) * ARROW_SPEED;
@@ -302,10 +262,10 @@ function draw() {
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
 
-  // hit flashes on top
+  // hit flashes
   drawHitFlashes();
 
-  // Feedback
+  // Feedback text
   if (feedbackText && now - feedbackTime < 300) {
     ctx.fillStyle = feedbackColor;
     ctx.font = '24px "Press Start 2P", monospace';
@@ -315,7 +275,7 @@ function draw() {
 
   // Combo text with beat pulse
   if (combo > 0) {
-    const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+    const beatTime = ((t - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
     const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2);
     const beatGlow = 12 + 8 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
 
@@ -335,7 +295,43 @@ function draw() {
     ctx.restore();
   }
 
-  ctx.textAlign = 'left';
+  // Countdown overlay
+  drawCountdownOverlay(t, now);
+}
+
+function drawCountdownOverlay(t, nowMs) {
+  if (t < SONG_OFFSET) {
+    const remaining = SONG_OFFSET - t; // seconds
+    let text = '';
+
+    if (remaining > 3) {
+      text = '3';
+    } else if (remaining > 2) {
+      text = '2';
+    } else if (remaining > 1) {
+      text = '1';
+    }
+
+    if (text) {
+      ctx.save();
+      ctx.font = '48px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD700';
+      ctx.shadowColor = '#c29e57';
+      ctx.shadowBlur = 12;
+      ctx.fillText(text, CANVAS_W / 2, CANVAS_H / 3);
+      ctx.restore();
+    }
+  } else if (t < SONG_OFFSET + 0.5) {
+    ctx.save();
+    ctx.font = '36px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FF69B4';
+    ctx.shadowColor = '#fff';
+    ctx.shadowBlur = 14;
+    ctx.fillText('DANCE!', CANVAS_W / 2, CANVAS_H / 3);
+    ctx.restore();
+  }
 }
 
 /* --- Beat Pulse Receptor --- */
@@ -349,7 +345,7 @@ function drawReceptor(ctx, lane) {
 
   const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
   const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
-  const pulseGlow = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
+  const pulseGlow  = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
 
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -465,7 +461,7 @@ function escapeHTML(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/ /g, '&nbsp;'); // keep visible spaces
+    .replace(/ /g, '&nbsp;');
 }
 
 /* ---------------- Events ---------------- */
@@ -480,19 +476,4 @@ retryBtn.addEventListener('click', startGame);
 submitScoreBtn.addEventListener('click', saveScore);
 skipSubmitBtn.addEventListener('click', hideModal);
 
-if (difficultySelect) {
-  difficultySelect.addEventListener('change', (e) => {
-    setDifficulty(e.target.value);
-  });
-}
-
-// Mobile button controls
-document.querySelectorAll('#mobile-controls button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const key = btn.dataset.key;
-    if (playing) judgeHit(key);
-  });
-});
-
-// initial board render
 displayBoard();
