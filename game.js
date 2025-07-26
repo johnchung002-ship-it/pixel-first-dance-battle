@@ -8,10 +8,11 @@ let   LANE_WIDTH = CANVAS_W / LANES.length;
 
 const BPM = 140;
 const NOTES_PER_BEAT = 2;
-const SONG_OFFSET = 2.0;      // 2s delay, no countdown
+/** 2 seconds so arrows don't already appear mid‑screen **/
+const SONG_OFFSET = 2.0;
 const SNIPPET_SECONDS = 30;
 
-// defaults (Normal)
+// Defaults (Normal)
 let HIT_WINDOW_PERFECT = 0.08;
 let HIT_WINDOW_GOOD    = 0.15;
 let ARROW_SPEED        = 400;
@@ -23,10 +24,10 @@ const STORAGE_KEY = 'messageBoard';
 const MAX_ROWS = 50;
 /******************/
 
-// stop page from scrolling with arrow keys / space
+// Prevent arrow keys from scrolling page
 window.addEventListener(
   "keydown",
-  (e) => {
+  function (e) {
     if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
       e.preventDefault();
     }
@@ -49,13 +50,13 @@ const scoreModal = document.getElementById('scoreModal');
 const finalScoreEl = document.getElementById('finalScore');
 const submitScoreBtn = document.getElementById('submitScoreBtn');
 const skipSubmitBtn = document.getElementById('skipSubmitBtn');
-const guestNameInput = document.getElementById('guestName');
+const initialsInput = document.getElementById('initials');
 const guestMessageInput = document.getElementById('guestMessage');
 
 const messageBoardBody = document.querySelector('#messageBoard tbody');
 
 let playing = false;
-let startTime = 0;
+let startTime = 0;          // when loop actually begins
 let arrows = [];
 let active = [];
 let score = 0;
@@ -69,29 +70,34 @@ let receptorFlash  = [0, 0, 0, 0];
 let feedbackText   = '';
 let feedbackColor  = '#fff';
 let feedbackTime   = 0;
+let comboAnimStart = 0;
 
 let hitFlashes = [];
 
-canvas.width = CANVAS_W;
-canvas.height = CANVAS_H;
+// Countdown state
+let showDanceUntil = 0; // timestamp (ms) when to hide "DANCE!"
 
-/* --- Load Arrow Sprites + log status --- */
+/* --- Load Arrow Sprites --- */
 const arrowSprites = {
   left: new Image(),
   down: new Image(),
   up: new Image(),
   right: new Image(),
 };
-
 arrowSprites.left.src  = "arrow_left.png";
 arrowSprites.down.src  = "arrow_down.png";
 arrowSprites.up.src    = "arrow_up.png";
 arrowSprites.right.src = "arrow_right.png";
 
-Object.entries(arrowSprites).forEach(([k, img]) => {
-  img.onload = () => console.log(`${k} arrow loaded`);
-  img.onerror = () => console.warn(`${k} arrow failed to load – using vector fallback (check path/case)`);
-});
+/* ---------------- Responsive Canvas (optional but future-proof) ---------------- */
+function resizeCanvasIfNeeded() {
+  // If you later decide to make it fully responsive, plug logic here.
+  // For now we keep fixed logical size to avoid reworking all math.
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+  LANE_WIDTH = CANVAS_W / LANES.length;
+}
+resizeCanvasIfNeeded();
 
 /* ---------------- Difficulty ---------------- */
 function setDifficulty(mode) {
@@ -110,19 +116,23 @@ function setDifficulty(mode) {
     HIT_WINDOW_GOOD    = 0.15;
   }
 }
+
+// Pick initial difficulty (mobile can still switch, but we’ll leave it normal now)
 setDifficulty(difficultySelect ? difficultySelect.value : 'normal');
 
-/* Prevent the difficulty dropdown from hijacking arrow keys during play */
+/* --- Prevent dropdown stealing focus during gameplay --- */
 function lockDifficultySelect() {
-  if (!difficultySelect) return;
-  difficultySelect.setAttribute('tabindex', '-1');
-  difficultySelect.blur();
-  difficultySelect.addEventListener('keydown', blockWhilePlaying);
+  if (difficultySelect) {
+    difficultySelect.setAttribute('tabindex', '-1');
+    difficultySelect.blur();
+    difficultySelect.addEventListener('keydown', blockWhilePlaying);
+  }
 }
 function unlockDifficultySelect() {
-  if (!difficultySelect) return;
-  difficultySelect.removeAttribute('tabindex');
-  difficultySelect.removeEventListener('keydown', blockWhilePlaying);
+  if (difficultySelect) {
+    difficultySelect.removeAttribute('tabindex');
+    difficultySelect.removeEventListener('keydown', blockWhilePlaying);
+  }
 }
 function blockWhilePlaying(e) {
   if (playing) e.preventDefault();
@@ -135,11 +145,9 @@ function resetState() {
   hits = 0;
   combo = 0;
   updateHUD();
-
   arrows = buildPatternForSnippet();
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
   totalNotes = arrows.length;
-
   laneHighlights = [0, 0, 0, 0];
   receptorFlash  = [0, 0, 0, 0];
   hitFlashes = [];
@@ -154,7 +162,11 @@ function startGame() {
   startBtn.classList.add('hidden');
   hideModal();
 
+  // Set start time right now; arrows won’t reach screen until SONG_OFFSET anyway
   startTime = performance.now() / 1000;
+
+  // Setup DANCE! overlay timing
+  showDanceUntil = performance.now() + 500; // show "DANCE!" for 0.5s after countdown hits 0
 
   if (bgm) {
     bgm.currentTime = 0;
@@ -168,7 +180,6 @@ function endGame() {
   unlockDifficultySelect();
   cancelAnimationFrame(raf);
   if (bgm) bgm.pause();
-
   finalScoreEl.textContent = score;
   retryBtn.classList.remove('hidden');
   showModal();
@@ -229,13 +240,13 @@ function applyHit(arrow, result) {
     feedbackColor = '#ffd24d';
   }
   combo++;
+  comboAnimStart = performance.now();
   hits++;
   feedbackTime = performance.now();
   laneHighlights[arrow.lane] = performance.now();
   receptorFlash[arrow.lane]  = performance.now();
 
   hitFlashes.push({ lane: arrow.lane, start: performance.now() });
-
   updateHUD();
 }
 
@@ -266,7 +277,6 @@ function draw() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
   const now = performance.now();
-  const t = getTime();
 
   // lanes
   for (let i = 0; i < LANES.length; i++) {
@@ -297,6 +307,7 @@ function draw() {
   }
 
   // Falling arrows
+  const t = getTime();
   for (const a of active) {
     if (a.judged) continue;
     const y = HITLINE_Y - (a.t - t) * ARROW_SPEED;
@@ -318,7 +329,7 @@ function draw() {
 
   // Combo text with beat pulse
   if (combo > 0) {
-    const beatTime = ((t - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+    const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
     const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2);
     const beatGlow = 12 + 8 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
 
@@ -338,7 +349,53 @@ function draw() {
     ctx.restore();
   }
 
+  // Countdown overlay (pixel style)
+  drawCountdownOverlay(t, now);
+
   ctx.textAlign = 'left';
+}
+
+/* --- Countdown overlay --- */
+function drawCountdownOverlay(t, nowMs) {
+  if (t < SONG_OFFSET) {
+    const remaining = SONG_OFFSET - t; // seconds
+    let text = '';
+    if (remaining > 1) {
+      text = '2';
+    } else if (remaining > 0) {
+      text = '1';
+    } else {
+      text = '';
+    }
+
+    if (text) {
+      ctx.save();
+      ctx.font = '48px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD700';
+      ctx.shadowColor = '#c29e57';
+      ctx.shadowBlur = 12;
+
+      // little scale pop
+      const scale = 1 + 0.1 * Math.sin((remaining % 1) * Math.PI);
+      ctx.translate(CANVAS_W / 2, CANVAS_H / 3);
+      ctx.scale(scale, scale);
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    }
+  } else {
+    // briefly show "DANCE!"
+    if (nowMs < showDanceUntil) {
+      ctx.save();
+      ctx.font = '32px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FF69B4';
+      ctx.shadowColor = '#fff';
+      ctx.shadowBlur = 14;
+      ctx.fillText('DANCE!', CANVAS_W / 2, CANVAS_H / 3);
+      ctx.restore();
+    }
+  }
 }
 
 /* --- Beat Pulse Receptor --- */
@@ -350,7 +407,7 @@ function drawReceptor(ctx, lane) {
   const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
   const y = HITLINE_Y - ARROW_SIZE / 2;
 
-  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL; // 0-1
+  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
   const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
   const pulseGlow  = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
 
@@ -391,72 +448,10 @@ function drawHitFlashes() {
   }
 }
 
-/* --- Draw Arrow (with image fallback) --- */
 function drawArrowSprite(ctx, x, y, size, lane) {
   const names = ['left', 'down', 'up', 'right'];
   const img = arrowSprites[names[lane]];
-
-  if (img && img.complete && img.naturalWidth > 0) {
-    ctx.drawImage(img, x, y, size, size);
-    return;
-  }
-
-  // Vector fallback if sprite missing
-  ctx.save();
-  ctx.translate(x + size / 2, y + size / 2);
-  ctx.fillStyle = LANE_COLORS[lane];
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 3;
-
-  const s = size * 0.45;
-
-  ctx.beginPath();
-  switch (lane) {
-    case 0: // left
-      ctx.moveTo(-s, 0);
-      ctx.lineTo(s * 0.4, -s);
-      ctx.lineTo(s * 0.4, -s * 0.4);
-      ctx.lineTo(s, -s * 0.4);
-      ctx.lineTo(s, s * 0.4);
-      ctx.lineTo(s * 0.4, s * 0.4);
-      ctx.lineTo(s * 0.4, s);
-      ctx.closePath();
-      break;
-    case 1: // down
-      ctx.moveTo(0, s);
-      ctx.lineTo(-s, -s * 0.4);
-      ctx.lineTo(-s * 0.4, -s * 0.4);
-      ctx.lineTo(-s * 0.4, -s);
-      ctx.lineTo(s * 0.4, -s);
-      ctx.lineTo(s * 0.4, -s * 0.4);
-      ctx.lineTo(s, -s * 0.4);
-      ctx.closePath();
-      break;
-    case 2: // up
-      ctx.moveTo(0, -s);
-      ctx.lineTo(-s, s * 0.4);
-      ctx.lineTo(-s * 0.4, s * 0.4);
-      ctx.lineTo(-s * 0.4, s);
-      ctx.lineTo(s * 0.4, s);
-      ctx.lineTo(s * 0.4, s * 0.4);
-      ctx.lineTo(s, s * 0.4);
-      ctx.closePath();
-      break;
-    case 3: // right
-      ctx.moveTo(s, 0);
-      ctx.lineTo(-s * 0.4, -s);
-      ctx.lineTo(-s * 0.4, -s * 0.4);
-      ctx.lineTo(-s, -s * 0.4);
-      ctx.lineTo(-s, s * 0.4);
-      ctx.lineTo(-s * 0.4, s * 0.4);
-      ctx.lineTo(-s * 0.4, s);
-      ctx.closePath();
-      break;
-  }
-
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
+  ctx.drawImage(img, x, y, size, size);
 }
 
 /* ---------------- Loop ---------------- */
@@ -465,7 +460,6 @@ function loop() {
   missOldArrows();
   draw();
   updateHUD();
-
   const t = getTime();
   const endTime = SONG_OFFSET + SNIPPET_SECONDS + 0.5;
   if (active.every(a => a.judged) || t > endTime) {
@@ -492,12 +486,12 @@ function saveBoard(board) {
 }
 
 function saveScore() {
-  const name = guestNameInput.value.trim();
+  const initials = initialsInput.value.toUpperCase().trim();
   const message = (guestMessageInput?.value || '').trim();
 
   const board = getBoard();
   board.push({
-    name: name || 'Guest',
+    initials: initials || '---',
     score,
     message,
     ts: Date.now()
@@ -518,7 +512,7 @@ function displayBoard() {
     .map((e, i) => `
       <tr>
         <td>${i + 1}</td>
-        <td>${escapeHTML(e.name)}</td>
+        <td>${escapeHTML(e.initials)}</td>
         <td>${e.score}</td>
         <td>${escapeHTML(e.message || '')}</td>
       </tr>
@@ -530,7 +524,8 @@ function escapeHTML(str) {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/ /g, '&nbsp;'); // keep visible spaces
 }
 
 /* ---------------- Events ---------------- */
@@ -551,7 +546,7 @@ if (difficultySelect) {
   });
 }
 
-// Mobile buttons (if present)
+// Mobile button controls
 document.querySelectorAll('#mobile-controls button').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.key;
@@ -559,5 +554,5 @@ document.querySelectorAll('#mobile-controls button').forEach(btn => {
   });
 });
 
-// initial board paint
+// initial board render
 displayBoard();
