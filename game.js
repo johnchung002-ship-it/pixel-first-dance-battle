@@ -107,7 +107,7 @@ resizeCanvasIfNeeded();
 /* ---------------- Difficulty ---------------- */
 function setDifficulty(mode) {
   if (mode === 'easy') {
-    ARROW_SPEED        = 300;
+    ARROW_SPEED        = 200;
     HIT_WINDOW_PERFECT = 0.12;
     HIT_WINDOW_GOOD    = 0.22;
   } else if (mode === 'hard') {
@@ -116,7 +116,7 @@ function setDifficulty(mode) {
     HIT_WINDOW_GOOD    = 0.12;
   } else {
     // normal
-    ARROW_SPEED        = 400;
+    ARROW_SPEED        = 350;
     HIT_WINDOW_PERFECT = 0.08;
     HIT_WINDOW_GOOD    = 0.15;
   }
