@@ -233,16 +233,19 @@ function draw() {
     ctx.fillText(label, x + (LANE_WIDTH / 2) - ctx.measureText(label).width / 2, 24);
   }
 
+  // Hit line
   ctx.strokeStyle = '#888';
   ctx.beginPath();
   ctx.moveTo(0, HITLINE_Y);
   ctx.lineTo(CANVAS_W, HITLINE_Y);
   ctx.stroke();
 
+  // Receptors
   for (let i = 0; i < LANES.length; i++) {
     drawReceptor(ctx, i);
   }
 
+  // Falling arrows
   const t = getTime();
   for (const a of active) {
     if (a.judged) continue;
@@ -252,8 +255,10 @@ function draw() {
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
 
+  // hit flashes on top
   drawHitFlashes();
 
+  // Feedback text
   if (feedbackText && now - feedbackTime < 300) {
     ctx.fillStyle = feedbackColor;
     ctx.font = '24px "Press Start 2P", monospace';
@@ -261,6 +266,7 @@ function draw() {
     ctx.fillText(feedbackText, CANVAS_W / 2, HITLINE_Y - 40);
   }
 
+  // Combo text with beat pulse
   if (combo > 0) {
     const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
     const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2);
@@ -374,7 +380,7 @@ function saveBoard(board) {
 
 function saveScore() {
   const initials = initialsInput.value.toUpperCase().trim();
-  const message = (guestMessageInput?.value || '').trim(); 
+  const message = (guestMessageInput?.value || '').trim();
 
   const board = getBoard();
   board.push({
@@ -412,7 +418,7 @@ function escapeHTML(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/ /g, '&nbsp;');  // preserve spaces
+    .replace(/ /g, '&nbsp;');  // preserve visible spaces
 }
 
 /* ---------------- Events ---------------- */
@@ -426,5 +432,13 @@ startBtn.addEventListener('click', startGame);
 retryBtn.addEventListener('click', startGame);
 submitScoreBtn.addEventListener('click', saveScore);
 skipSubmitBtn.addEventListener('click', hideModal);
+
+// Mobile button controls
+document.querySelectorAll('#mobile-controls button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.key;
+    if (playing) judgeHit(key);
+  });
+});
 
 displayBoard();
