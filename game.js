@@ -167,11 +167,9 @@ function startGame() {
   startBtn?.classList.add('hidden');
   hideModal();
 
-  // Set start time right now; arrows won’t reach screen until SONG_OFFSET anyway
   startTime = performance.now() / 1000;
 
-  // Setup DANCE! overlay timing
-  showDanceUntil = performance.now() + 500; // show "DANCE!" for 0.5s after countdown hits 0
+  showDanceUntil = performance.now() + 500;
 
   if (bgm) {
     bgm.currentTime = 0;
@@ -283,7 +281,6 @@ function draw() {
 
   const now = performance.now();
 
-  // lanes
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
     if (now - laneHighlights[i] < 150) {
@@ -299,19 +296,16 @@ function draw() {
     ctx.fillText(label, x + (LANE_WIDTH / 2) - ctx.measureText(label).width / 2, 24);
   }
 
-  // Hit line
   ctx.strokeStyle = '#888';
   ctx.beginPath();
   ctx.moveTo(0, HITLINE_Y);
   ctx.lineTo(CANVAS_W, HITLINE_Y);
   ctx.stroke();
 
-  // Receptors
   for (let i = 0; i < LANES.length; i++) {
     drawReceptor(ctx, i);
   }
 
-  // Falling arrows
   const t = getTime();
   for (const a of active) {
     if (a.judged) continue;
@@ -321,10 +315,8 @@ function draw() {
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
 
-  // hit flashes
   drawHitFlashes();
 
-  // Feedback text
   if (feedbackText && now - feedbackTime < 300) {
     ctx.fillStyle = feedbackColor;
     ctx.font = '24px "Press Start 2P", monospace';
@@ -332,7 +324,6 @@ function draw() {
     ctx.fillText(feedbackText, CANVAS_W / 2, HITLINE_Y - 40);
   }
 
-  // Combo text with beat pulse
   if (combo > 0) {
     const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
     const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2);
@@ -354,7 +345,6 @@ function draw() {
     ctx.restore();
   }
 
-  // Countdown overlay (pixel style)
   drawCountdownOverlay(t, now);
 
   ctx.textAlign = 'left';
@@ -363,7 +353,7 @@ function draw() {
 /* --- Countdown overlay --- */
 function drawCountdownOverlay(t, nowMs) {
   if (t < SONG_OFFSET) {
-    const remaining = SONG_OFFSET - t; // seconds
+    const remaining = SONG_OFFSET - t;
     let text = '';
     if (remaining > 1) {
       text = '2';
@@ -381,7 +371,6 @@ function drawCountdownOverlay(t, nowMs) {
       ctx.shadowColor = '#c29e57';
       ctx.shadowBlur = 12;
 
-      // little scale pop
       const scale = 1 + 0.1 * Math.sin((remaining % 1) * Math.PI);
       ctx.translate(CANVAS_W / 2, CANVAS_H / 3);
       ctx.scale(scale, scale);
@@ -389,7 +378,6 @@ function drawCountdownOverlay(t, nowMs) {
       ctx.restore();
     }
   } else {
-    // briefly show "DANCE!"
     if (nowMs < showDanceUntil) {
       ctx.save();
       ctx.font = '32px "Press Start 2P", monospace';
@@ -494,21 +482,20 @@ function saveBoard(board) {
   }
 }
 
-// **Fixed**: prevent form submit reload & allow spaces
+// Updated saveScore: allows spaces and defaults to '---' if empty
 function saveScore(event) {
   event?.preventDefault();
 
-  const initials = (initialsInput?.value || '').toUpperCase().trim(); // keep your uppercase style
+  let initials = (initialsInput?.value || '').trim();
   const message  = (guestMessageInput?.value || '').trim();
 
   if (!initials) {
-    alert('Please enter your name/initials.');
-    return;
+    initials = '---';
   }
 
   const board = getBoard();
   board.push({
-    initials: initials || '---',
+    initials,
     score,
     message,
     ts: Date.now()
@@ -537,7 +524,6 @@ function displayBoard() {
     .join('');
 }
 
-// **Fixed**: keep spaces as-is (no &nbsp;)
 function escapeHTML(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -557,7 +543,6 @@ retryBtn?.addEventListener('click', startGame);
 submitScoreBtn?.addEventListener('click', (e) => saveScore(e));
 skipSubmitBtn?.addEventListener('click', hideModal);
 
-// If your modal contains a <form>, prevent default submit as well
 const scoreForm = scoreModal?.querySelector('form');
 if (scoreForm) {
   scoreForm.addEventListener('submit', (e) => saveScore(e));
@@ -569,7 +554,6 @@ if (difficultySelect) {
   });
 }
 
-// Mobile button controls
 document.querySelectorAll('#mobile-controls button').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.key;
@@ -577,5 +561,4 @@ document.querySelectorAll('#mobile-controls button').forEach(btn => {
   });
 });
 
-// initial board render
 displayBoard();
