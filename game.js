@@ -19,8 +19,8 @@ const BEAT_INTERVAL = 60 / BPM; // for beat pulse
 
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
 
-const STORAGE_KEY = 'messageBoard';   // <-- new
-const MAX_ROWS = 50;                  // keep top N by score
+const STORAGE_KEY = 'messageBoard';
+const MAX_ROWS = 50;
 /******************/
 
 // Prevent arrow keys from scrolling
@@ -49,9 +49,9 @@ const finalScoreEl = document.getElementById('finalScore');
 const submitScoreBtn = document.getElementById('submitScoreBtn');
 const skipSubmitBtn = document.getElementById('skipSubmitBtn');
 const initialsInput = document.getElementById('initials');
-const guestMessageInput = document.getElementById('guestMessage'); // <-- new
+const guestMessageInput = document.getElementById('guestMessage');
 
-const messageBoardBody = document.querySelector('#messageBoard tbody'); // <-- new
+const messageBoardBody = document.querySelector('#messageBoard tbody');
 
 let playing = false;
 let startTime = 0;
@@ -70,7 +70,6 @@ let feedbackColor = '#fff';
 let feedbackTime = 0;
 let comboAnimStart = 0;
 
-// hit flash ring effects
 let hitFlashes = [];
 
 canvas.width = CANVAS_W;
@@ -188,9 +187,7 @@ function applyHit(arrow, result) {
   laneHighlights[arrow.lane] = performance.now();
   receptorFlash[arrow.lane] = performance.now();
 
-  // hit flash ring
   hitFlashes.push({ lane: arrow.lane, start: performance.now() });
-
   updateHUD();
 }
 
@@ -303,8 +300,7 @@ function drawReceptor(ctx, lane) {
   const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
   const y = HITLINE_Y - ARROW_SIZE / 2;
 
-  // Beat pulse factor
-  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL; // 0-1
+  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
   const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
   const pulseGlow = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
 
@@ -324,11 +320,10 @@ function drawReceptor(ctx, lane) {
 /* --- Hit Flash Rings --- */
 function drawHitFlashes() {
   const now = performance.now();
-  // keep flashes for 250ms
   hitFlashes = hitFlashes.filter(f => now - f.start < 250);
 
   for (const f of hitFlashes) {
-    const progress = (now - f.start) / 250; // 0 -> 1
+    const progress = (now - f.start) / 250;
     const alpha = 1 - progress;
     const size = ARROW_SIZE + 30 * progress;
 
@@ -367,8 +362,7 @@ function loop() {
   raf = requestAnimationFrame(loop);
 }
 
-/* ---------------- Message Board / Leaderboard Hybrid ---------------- */
-
+/* ---------------- Message Board ---------------- */
 function showModal() { scoreModal.classList.remove('hidden'); }
 function hideModal() { scoreModal.classList.add('hidden'); }
 
@@ -380,10 +374,13 @@ function getBoard() {
   }
 }
 
+function saveBoard(board) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(board));
+}
+
 function saveScore() {
   const initials = initialsInput.value.toUpperCase().trim();
-  // Preserve single spaces, trim only leading/trailing
-  const message = (guestMessageInput?.value || '').replace(/\s+/g, ' ').trim();
+  const message = (guestMessageInput?.value || '').trim(); // spaces preserved
 
   const board = getBoard();
   board.push({
@@ -416,7 +413,6 @@ function displayBoard() {
     .join('');
 }
 
-// very small helper to avoid HTML injection in messages
 function escapeHTML(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -436,5 +432,4 @@ retryBtn.addEventListener('click', startGame);
 submitScoreBtn.addEventListener('click', saveScore);
 skipSubmitBtn.addEventListener('click', hideModal);
 
-// initial render of existing board on page load
 displayBoard();
