@@ -9,7 +9,7 @@ let   LANE_WIDTH = CANVAS_W / LANES.length;
 const BPM = 140;
 const NOTES_PER_BEAT = 2;
 /** 2 seconds so arrows don't already appear mid‑screen **/
-const SONG_OFFSET = 2.0;
+const SONG_OFFSET = 1.0;
 const SNIPPET_SECONDS = 30;
 
 // Defaults (Normal)
