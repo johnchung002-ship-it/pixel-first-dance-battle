@@ -57,13 +57,13 @@ header h1 {
   font-size: 24px;
   color: #fff;
   text-shadow:
-    2px 2px 0 #c29e57,   /* gold-like outline */
+    2px 2px 0 #c29e57,
     -2px -2px 0 #c29e57,
     2px -2px 0 #c29e57,
     -2px 2px 0 #c29e57;
 }
 
-/* HUD Wedding Theme */
+/* HUD Wedding Theme with Pixel-Pill Boxes */
 #hud {
   display: flex;
   gap: 12px;
@@ -72,33 +72,63 @@ header h1 {
   align-items: center;
   margin-bottom: 8px;
   font-size: 12px;
-  color: #ffffff; /* Default label color */
+  color: #ffffff;
 }
 
-.score-label strong {
-  color: #FFD700; /* Gold */
-  text-shadow: 0 0 4px #FFD700, 0 0 6px #FFC107;
+#hud span {
+  padding: 6px 10px;
+  border: 2px solid;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
 }
 
-.combo-label strong {
-  color: #FF69B4; /* Blush Pink */
-  text-shadow: 0 0 4px #FF69B4, 0 0 6px #FFB6C1;
+/* Gold for Score */
+.score-label {
+  border-color: #FFD700;
+  background: rgba(255, 215, 0, 0.12);
+  color: #FFD700;
 }
 
-.accuracy-label strong {
-  color: #FFF8DC; /* Ivory */
-  text-shadow: 0 0 4px #FFF8DC, 0 0 6px #F5DEB3;
+/* Pink for Combo */
+.combo-label {
+  border-color: #FF69B4;
+  background: rgba(255, 105, 180, 0.12);
+  color: #FF69B4;
+}
+
+/* Ivory for Accuracy */
+.accuracy-label {
+  border-color: #FFF8DC;
+  background: rgba(255, 248, 220, 0.12);
+  color: #FFF8DC;
+}
+
+#hud strong {
+  color: inherit;
+  text-shadow: 0 0 4px currentColor;
 }
 
 #hud button {
   cursor: pointer;
-  background: var(--accent);
-  border: none;
+  background: #FFD700;
+  border: 2px solid #c29e57;
   padding: 6px 12px;
-  color: #000;
+  color: #4b2e2e;
   font-weight: bold;
-  border-radius: 4px;
+  border-radius: 6px;
   font-family: 'Press Start 2P', monospace;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+  transition: all 0.3s ease;
+}
+
+#hud button:hover {
+  background: #FF69B4;
+  border-color: #d1588f;
+  color: #fff;
+  text-shadow: 0 0 4px rgba(255,255,255,0.7);
+  transform: scale(1.05);
 }
 
 .hidden { display: none !important; }
@@ -186,13 +216,23 @@ header h1 {
 
 .modal-buttons button {
   cursor: pointer;
-  background: var(--accent);
-  border: none;
+  background: #FFD700;
+  border: 2px solid #c29e57;
   padding: 6px 12px;
-  color: #000;
+  color: #4b2e2e;
   font-weight: bold;
-  border-radius: 4px;
+  border-radius: 6px;
   font-family: 'Press Start 2P', monospace;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+  transition: all 0.3s ease;
+}
+
+.modal-buttons button:hover {
+  background: #FF69B4;
+  border-color: #d1588f;
+  color: #fff;
+  text-shadow: 0 0 4px rgba(255,255,255,0.7);
+  transform: scale(1.05);
 }
 
 #gameCanvas {
