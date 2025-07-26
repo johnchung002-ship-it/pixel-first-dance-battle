@@ -1,24 +1,38 @@
 /***** CONFIG *****/
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
-let CANVAS_W = 480, CANVAS_H = 640;
+let   CANVAS_W = 480, CANVAS_H = 640;
 
 const HITLINE_Y = 520;
 const ARROW_SIZE = 64;
-let LANE_WIDTH = CANVAS_W / LANES.length;
+let   LANE_WIDTH = CANVAS_W / LANES.length;
 
 const BPM = 140;
 const NOTES_PER_BEAT = 2;
-const START_DELAY = 2.0; // NEW: 2-second pre-roll delay
+const SONG_OFFSET = 2.0;      // 2s delay, no countdown
 const SNIPPET_SECONDS = 30;
 
-const HIT_WINDOW_PERFECT = 0.08;
-const HIT_WINDOW_GOOD = 0.15;
-const ARROW_SPEED = 400;
+// defaults (Normal)
+let HIT_WINDOW_PERFECT = 0.08;
+let HIT_WINDOW_GOOD    = 0.15;
+let ARROW_SPEED        = 400;
 
+const BEAT_INTERVAL = 60 / BPM;
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
+
 const STORAGE_KEY = 'messageBoard';
 const MAX_ROWS = 50;
 /******************/
+
+// stop page from scrolling with arrow keys / space
+window.addEventListener(
+  "keydown",
+  (e) => {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+      e.preventDefault();
+    }
+  },
+  { passive: false }
+);
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -56,36 +70,85 @@ let feedbackText   = '';
 let feedbackColor  = '#fff';
 let feedbackTime   = 0;
 
+let hitFlashes = [];
+
 canvas.width = CANVAS_W;
 canvas.height = CANVAS_H;
 
+/* --- Load Arrow Sprites + log status --- */
 const arrowSprites = {
   left: new Image(),
   down: new Image(),
   up: new Image(),
   right: new Image(),
 };
-arrowSprites.left.src = "arrow_left.png";
-arrowSprites.down.src = "arrow_down.png";
-arrowSprites.up.src = "arrow_up.png";
+
+arrowSprites.left.src  = "arrow_left.png";
+arrowSprites.down.src  = "arrow_down.png";
+arrowSprites.up.src    = "arrow_up.png";
 arrowSprites.right.src = "arrow_right.png";
 
-/* ---------------- Core Game ---------------- */
+Object.entries(arrowSprites).forEach(([k, img]) => {
+  img.onload = () => console.log(`${k} arrow loaded`);
+  img.onerror = () => console.warn(`${k} arrow failed to load – using vector fallback (check path/case)`);
+});
+
+/* ---------------- Difficulty ---------------- */
+function setDifficulty(mode) {
+  if (mode === 'easy') {
+    ARROW_SPEED        = 300;
+    HIT_WINDOW_PERFECT = 0.12;
+    HIT_WINDOW_GOOD    = 0.22;
+  } else if (mode === 'hard') {
+    ARROW_SPEED        = 480;
+    HIT_WINDOW_PERFECT = 0.06;
+    HIT_WINDOW_GOOD    = 0.12;
+  } else {
+    // normal
+    ARROW_SPEED        = 400;
+    HIT_WINDOW_PERFECT = 0.08;
+    HIT_WINDOW_GOOD    = 0.15;
+  }
+}
+setDifficulty(difficultySelect ? difficultySelect.value : 'normal');
+
+/* Prevent the difficulty dropdown from hijacking arrow keys during play */
+function lockDifficultySelect() {
+  if (!difficultySelect) return;
+  difficultySelect.setAttribute('tabindex', '-1');
+  difficultySelect.blur();
+  difficultySelect.addEventListener('keydown', blockWhilePlaying);
+}
+function unlockDifficultySelect() {
+  if (!difficultySelect) return;
+  difficultySelect.removeAttribute('tabindex');
+  difficultySelect.removeEventListener('keydown', blockWhilePlaying);
+}
+function blockWhilePlaying(e) {
+  if (playing) e.preventDefault();
+}
+
+/* ---------------- Core ---------------- */
 
 function resetState() {
   score = 0;
   hits = 0;
   combo = 0;
   updateHUD();
+
   arrows = buildPatternForSnippet();
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
   totalNotes = arrows.length;
+
   laneHighlights = [0, 0, 0, 0];
-  receptorFlash = [0, 0, 0, 0];
+  receptorFlash  = [0, 0, 0, 0];
+  hitFlashes = [];
+  feedbackText = '';
 }
 
 function startGame() {
   resetState();
+  lockDifficultySelect();
   playing = true;
   retryBtn.classList.add('hidden');
   startBtn.classList.add('hidden');
@@ -95,15 +158,17 @@ function startGame() {
 
   if (bgm) {
     bgm.currentTime = 0;
-    setTimeout(() => bgm.play().catch(err => console.warn('Music blocked:', err)), START_DELAY * 1000);
+    bgm.play().catch(err => console.warn('Music blocked:', err));
   }
   loop();
 }
 
 function endGame() {
   playing = false;
+  unlockDifficultySelect();
   cancelAnimationFrame(raf);
   if (bgm) bgm.pause();
+
   finalScoreEl.textContent = score;
   retryBtn.classList.remove('hidden');
   showModal();
@@ -113,8 +178,8 @@ function buildPatternForSnippet() {
   const pattern = [];
   const beat = 60 / BPM;
   const noteStep = beat / NOTES_PER_BEAT;
-  const endTime = SNIPPET_SECONDS;
-  for (let t = START_DELAY; t <= endTime + START_DELAY; t += noteStep) {
+  const endTime = SONG_OFFSET + SNIPPET_SECONDS;
+  for (let t = SONG_OFFSET; t <= endTime; t += noteStep) {
     if (Math.random() < 0.75) {
       pattern.push({ lane: Math.floor(Math.random() * LANES.length), t });
     }
@@ -144,8 +209,12 @@ function judgeHit(key) {
   }
 
   if (!best) return;
-  if (bestDiff <= HIT_WINDOW_PERFECT) applyHit(best, 'perfect');
-  else if (bestDiff <= HIT_WINDOW_GOOD) applyHit(best, 'good');
+
+  if (bestDiff <= HIT_WINDOW_PERFECT) {
+    applyHit(best, 'perfect');
+  } else if (bestDiff <= HIT_WINDOW_GOOD) {
+    applyHit(best, 'good');
+  }
 }
 
 function applyHit(arrow, result) {
@@ -164,6 +233,9 @@ function applyHit(arrow, result) {
   feedbackTime = performance.now();
   laneHighlights[arrow.lane] = performance.now();
   receptorFlash[arrow.lane]  = performance.now();
+
+  hitFlashes.push({ lane: arrow.lane, start: performance.now() });
+
   updateHUD();
 }
 
@@ -172,6 +244,7 @@ function missOldArrows() {
   for (const a of active) {
     if (!a.judged && t - a.t > HIT_WINDOW_GOOD) {
       a.judged = true;
+      a.result = 'miss';
       combo = 0;
       feedbackText = 'MISS!';
       feedbackColor = '#ff4d4d';
@@ -187,28 +260,43 @@ function updateHUD() {
   accuracyEl.textContent = `${acc}%`;
 }
 
-/* ---------------- Drawing ---------------- */
+/* ---------------- Draw ---------------- */
 
 function draw() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-  const t = getTime();
-  const now = performance.now();
 
-  // Draw lanes
+  const now = performance.now();
+  const t = getTime();
+
+  // lanes
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
+    if (now - laneHighlights[i] < 150) {
+      ctx.fillStyle = 'rgba(0,255,150,0.2)';
+      ctx.fillRect(x, 0, LANE_WIDTH, CANVAS_H);
+    }
     ctx.strokeStyle = '#333';
     ctx.strokeRect(x, 0, LANE_WIDTH, CANVAS_H);
+
+    ctx.fillStyle = '#555';
+    ctx.font = '16px "Press Start 2P", monospace';
+    const label = LANES[i].replace('Arrow', '');
+    ctx.fillText(label, x + (LANE_WIDTH / 2) - ctx.measureText(label).width / 2, 24);
   }
 
-  // Draw hit line
+  // Hit line
   ctx.strokeStyle = '#888';
   ctx.beginPath();
   ctx.moveTo(0, HITLINE_Y);
   ctx.lineTo(CANVAS_W, HITLINE_Y);
   ctx.stroke();
 
-  // Draw arrows
+  // Receptors
+  for (let i = 0; i < LANES.length; i++) {
+    drawReceptor(ctx, i);
+  }
+
+  // Falling arrows
   for (const a of active) {
     if (a.judged) continue;
     const y = HITLINE_Y - (a.t - t) * ARROW_SPEED;
@@ -217,6 +305,9 @@ function draw() {
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
 
+  // hit flashes
+  drawHitFlashes();
+
   // Feedback text
   if (feedbackText && now - feedbackTime < 300) {
     ctx.fillStyle = feedbackColor;
@@ -224,12 +315,148 @@ function draw() {
     ctx.textAlign = 'center';
     ctx.fillText(feedbackText, CANVAS_W / 2, HITLINE_Y - 40);
   }
+
+  // Combo text with beat pulse
+  if (combo > 0) {
+    const beatTime = ((t - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+    const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2);
+    const beatGlow = 12 + 8 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
+
+    ctx.save();
+    ctx.translate(CANVAS_W / 2, HITLINE_Y + 60);
+    ctx.scale(beatScale, beatScale);
+    ctx.globalAlpha = 1;
+
+    ctx.shadowColor = '#00ff9d';
+    ctx.shadowBlur = beatGlow;
+
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '20px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${combo} Combo`, 0, 0);
+
+    ctx.restore();
+  }
+
+  ctx.textAlign = 'left';
 }
 
+/* --- Beat Pulse Receptor --- */
+function drawReceptor(ctx, lane) {
+  const flashDuration = 150;
+  const age = performance.now() - receptorFlash[lane];
+  const alpha = age < flashDuration ? 1 : 0.85;
+
+  const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
+  const y = HITLINE_Y - ARROW_SIZE / 2;
+
+  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL; // 0-1
+  const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
+  const pulseGlow  = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x + ARROW_SIZE / 2, y + ARROW_SIZE / 2);
+  ctx.scale(pulseScale, pulseScale);
+  ctx.translate(-ARROW_SIZE / 2, -ARROW_SIZE / 2);
+
+  ctx.shadowColor = '#fff';
+  ctx.shadowBlur = age < flashDuration ? 20 : pulseGlow;
+
+  drawArrowSprite(ctx, 0, 0, ARROW_SIZE, lane);
+  ctx.restore();
+}
+
+/* --- Hit Flash Rings --- */
+function drawHitFlashes() {
+  const now = performance.now();
+  hitFlashes = hitFlashes.filter(f => now - f.start < 250);
+
+  for (const f of hitFlashes) {
+    const progress = (now - f.start) / 250;
+    const alpha = 1 - progress;
+    const size = ARROW_SIZE + 30 * progress;
+
+    const x = f.lane * LANE_WIDTH + (LANE_WIDTH / 2);
+    const y = HITLINE_Y;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = LANE_COLORS[f.lane];
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/* --- Draw Arrow (with image fallback) --- */
 function drawArrowSprite(ctx, x, y, size, lane) {
   const names = ['left', 'down', 'up', 'right'];
   const img = arrowSprites[names[lane]];
-  ctx.drawImage(img, x, y, size, size);
+
+  if (img && img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, x, y, size, size);
+    return;
+  }
+
+  // Vector fallback if sprite missing
+  ctx.save();
+  ctx.translate(x + size / 2, y + size / 2);
+  ctx.fillStyle = LANE_COLORS[lane];
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 3;
+
+  const s = size * 0.45;
+
+  ctx.beginPath();
+  switch (lane) {
+    case 0: // left
+      ctx.moveTo(-s, 0);
+      ctx.lineTo(s * 0.4, -s);
+      ctx.lineTo(s * 0.4, -s * 0.4);
+      ctx.lineTo(s, -s * 0.4);
+      ctx.lineTo(s, s * 0.4);
+      ctx.lineTo(s * 0.4, s * 0.4);
+      ctx.lineTo(s * 0.4, s);
+      ctx.closePath();
+      break;
+    case 1: // down
+      ctx.moveTo(0, s);
+      ctx.lineTo(-s, -s * 0.4);
+      ctx.lineTo(-s * 0.4, -s * 0.4);
+      ctx.lineTo(-s * 0.4, -s);
+      ctx.lineTo(s * 0.4, -s);
+      ctx.lineTo(s * 0.4, -s * 0.4);
+      ctx.lineTo(s, -s * 0.4);
+      ctx.closePath();
+      break;
+    case 2: // up
+      ctx.moveTo(0, -s);
+      ctx.lineTo(-s, s * 0.4);
+      ctx.lineTo(-s * 0.4, s * 0.4);
+      ctx.lineTo(-s * 0.4, s);
+      ctx.lineTo(s * 0.4, s);
+      ctx.lineTo(s * 0.4, s * 0.4);
+      ctx.lineTo(s, s * 0.4);
+      ctx.closePath();
+      break;
+    case 3: // right
+      ctx.moveTo(s, 0);
+      ctx.lineTo(-s * 0.4, -s);
+      ctx.lineTo(-s * 0.4, -s * 0.4);
+      ctx.lineTo(-s, -s * 0.4);
+      ctx.lineTo(-s, s * 0.4);
+      ctx.lineTo(-s * 0.4, s * 0.4);
+      ctx.lineTo(-s * 0.4, s);
+      ctx.closePath();
+      break;
+  }
+
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
 }
 
 /* ---------------- Loop ---------------- */
@@ -238,8 +465,9 @@ function loop() {
   missOldArrows();
   draw();
   updateHUD();
+
   const t = getTime();
-  const endTime = START_DELAY + SNIPPET_SECONDS + 0.5;
+  const endTime = SONG_OFFSET + SNIPPET_SECONDS + 0.5;
   if (active.every(a => a.judged) || t > endTime) {
     endGame();
     return;
@@ -284,6 +512,8 @@ function saveScore() {
 
 function displayBoard() {
   const board = getBoard();
+  if (!messageBoardBody) return;
+
   messageBoardBody.innerHTML = board
     .map((e, i) => `
       <tr>
@@ -299,13 +529,13 @@ function displayBoard() {
 function escapeHTML(str) {
   return String(str)
     .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;/g)
+    .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
 
 /* ---------------- Events ---------------- */
 document.addEventListener('keydown', (e) => {
-  if (LANES.includes(e.key)) {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
     if (playing) judgeHit(e.key);
   }
 });
@@ -315,4 +545,19 @@ retryBtn.addEventListener('click', startGame);
 submitScoreBtn.addEventListener('click', saveScore);
 skipSubmitBtn.addEventListener('click', hideModal);
 
+if (difficultySelect) {
+  difficultySelect.addEventListener('change', (e) => {
+    setDifficulty(e.target.value);
+  });
+}
+
+// Mobile buttons (if present)
+document.querySelectorAll('#mobile-controls button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.key;
+    if (playing) judgeHit(key);
+  });
+});
+
+// initial board paint
 displayBoard();
