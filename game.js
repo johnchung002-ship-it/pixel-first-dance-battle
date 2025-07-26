@@ -8,7 +8,7 @@ const LANE_WIDTH = CANVAS_W / LANES.length;
 
 const BPM = 140;
 const NOTES_PER_BEAT = 2;
-const SONG_OFFSET = 0.3;
+const SONG_OFFSET = 1.5;
 const SNIPPET_SECONDS = 30;
 
 // Defaults (Normal)
