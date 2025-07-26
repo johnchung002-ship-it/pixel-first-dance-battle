@@ -44,13 +44,13 @@ body {
   box-shadow: 0 0 16px rgba(0,0,0,0.6);
   margin-bottom: 16px;
   animation: pulse-floor 1.07s infinite ease-in-out;
-  width: 100%;         /* responsive */
-  max-width: 480px;    /* desktop limit */
+  width: 100%;
+  max-width: 480px;
 }
 
 #gameCanvas {
   width: 100%;
-  height: auto;        /* maintains aspect ratio */
+  height: auto;
 }
 
 @keyframes pulse-floor {
@@ -61,9 +61,9 @@ body {
 header h1 {
   text-align: center;
   margin: 8px 0 12px;
-  font-size: 20px;        /* default */
+  font-size: 20px;
   letter-spacing: 1px;
-  white-space: nowrap;    /* keep on one line */
+  white-space: nowrap;
   color: #fff;
   text-shadow:
     2px 2px 0 #c29e57,
@@ -261,9 +261,37 @@ header h1 {
   transform: scale(1.05);
 }
 
-#gameCanvas {
-  position: relative;
-  z-index: 2;
+/* Mobile Controls */
+#mobile-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#mobile-controls button {
+  font-size: 20px;
+  padding: 12px 16px;
+  background: #FFD700;
+  border: 2px solid #c29e57;
+  border-radius: 6px;
+  font-family: 'Press Start 2P', monospace;
+  cursor: pointer;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+  transition: background 0.3s;
+}
+
+#mobile-controls button:hover {
+  background: #FF69B4;
+  color: #fff;
+  border-color: #d1588f;
+}
+
+/* Hide mobile controls on desktop */
+@media (min-width: 601px) {
+  #mobile-controls {
+    display: none;
+  }
 }
 
 /* Mobile Optimizations */
@@ -291,5 +319,14 @@ header h1 {
   .modal-buttons button {
     font-size: 10px;
     padding: 8px 10px;
+  }
+}
+
+/* Stack HUD on small screens */
+@media (max-width: 400px) {
+  #hud {
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
   }
 }
