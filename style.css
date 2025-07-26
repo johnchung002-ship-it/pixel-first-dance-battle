@@ -63,6 +63,7 @@ header h1 {
     -2px 2px 0 #c29e57;
 }
 
+/* HUD Wedding Theme */
 #hud {
   display: flex;
   gap: 12px;
@@ -71,11 +72,22 @@ header h1 {
   align-items: center;
   margin-bottom: 8px;
   font-size: 12px;
+  color: #ffffff; /* Default label color */
 }
 
-#hud strong {
-  color: var(--accent);
-  text-shadow: 0 0 4px var(--accent);
+.score-label strong {
+  color: #FFD700; /* Gold */
+  text-shadow: 0 0 4px #FFD700, 0 0 6px #FFC107;
+}
+
+.combo-label strong {
+  color: #FF69B4; /* Blush Pink */
+  text-shadow: 0 0 4px #FF69B4, 0 0 6px #FFB6C1;
+}
+
+.accuracy-label strong {
+  color: #FFF8DC; /* Ivory */
+  text-shadow: 0 0 4px #FFF8DC, 0 0 6px #F5DEB3;
 }
 
 #hud button {
