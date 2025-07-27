@@ -15,6 +15,13 @@
 
 * { box-sizing: border-box; }
 
+html, body {
+  overscroll-behavior: none;
+  touch-action: none; /* Prevent unintended scroll */
+  height: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background: #000 url('ebell_bg-w-v2.png') center center / cover no-repeat fixed;
@@ -22,7 +29,6 @@ body {
   display: flex;
   justify-content: center;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
 /* Game container */
@@ -293,7 +299,7 @@ header h1 {
 .modal-content textarea {
   width: 90%;
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
+  font-size: 16px !important; /* Prevent iOS zoom on focus */
   margin: 8px 0 16px;
   padding: 4px;
 }
