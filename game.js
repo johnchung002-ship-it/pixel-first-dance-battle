@@ -25,8 +25,8 @@ const SONGS = [
     cover: "cover2.png"
   },
   {
-    title: "Final Dance",
-    file: "another-song.mp3",
+    title: "Level Up",
+    file: "Ciara-Level-Up-15_7s-to-49_7s.mp3",
     bpm: 160,
     snippet: 30,
     cover: "cover3.png"
