@@ -28,19 +28,18 @@ let ARROW_SPEED = 350;
 
 const BEAT_INTERVAL = 60 / BPM;
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
-
 const MAX_ROWS = 50;
 /******************/
 
-// Prevent arrow keys / space from scrolling the page **unless typing in inputs**
+// Prevent arrow keys from scrolling page
 window.addEventListener(
   "keydown",
   function (e) {
     const isTypingElement =
       document.activeElement &&
       (document.activeElement.tagName === 'INPUT' ||
-        document.activeElement.tagname === 'TEXTAREA' ||
-        document.activeElement.isContentEditable);
+       document.activeElement.tagname === 'TEXTAREA' ||
+       document.activeElement.isContentEditable);
 
     if (!isTypingElement &&
       ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
@@ -86,10 +85,7 @@ let feedbackText = '';
 let feedbackColor = '#fff';
 let feedbackTime = 0;
 let comboAnimStart = 0;
-
 let hitFlashes = [];
-
-// Countdown state
 let showDanceUntil = 0;
 
 /* --- Load Arrow Sprites --- */
@@ -130,7 +126,6 @@ function setDifficulty(mode) {
 }
 setDifficulty(difficultySelect ? difficultySelect.value : 'normal');
 
-/* --- Prevent dropdown stealing focus during gameplay --- */
 function lockDifficultySelect() {
   if (difficultySelect) {
     difficultySelect.setAttribute('tabindex', '-1');
@@ -283,7 +278,6 @@ function draw() {
 
   const now = performance.now();
 
-  // --- Background Beat Pulse ---
   const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
   const pulse = 0.25 + 0.15 * Math.sin(beatTime * Math.PI * 2);
   ctx.fillStyle = `rgba(255, 105, 180, ${pulse * 0.2})`;
@@ -358,14 +352,12 @@ function draw() {
   ctx.textAlign = 'left';
 }
 
-/* --- Countdown overlay --- */
 function drawCountdownOverlay(t, nowMs) {
   if (t < SONG_OFFSET) {
     const remaining = SONG_OFFSET - t;
     let text = '';
     if (remaining > 1) text = '2';
     else if (remaining > 0) text = '1';
-    else text = '';
 
     if (text) {
       ctx.save();
@@ -393,7 +385,6 @@ function drawCountdownOverlay(t, nowMs) {
   }
 }
 
-/* --- Beat Pulse Receptor --- */
 function drawReceptor(ctx, lane) {
   const flashDuration = 150;
   const age = performance.now() - receptorFlash[lane];
@@ -419,7 +410,6 @@ function drawReceptor(ctx, lane) {
   ctx.restore();
 }
 
-/* --- Hit Flash Rings --- */
 function drawHitFlashes() {
   const now = performance.now();
   hitFlashes = hitFlashes.filter(f => now - f.start < 250);
@@ -469,7 +459,6 @@ const scoresCollection = collection(db, "scores");
 
 async function saveScore(event) {
   event?.preventDefault();
-
   const name = (guestNameInput?.value || '---').trim();
   const message = (guestMessageInput?.value || '').trim();
 
@@ -529,4 +518,7 @@ document.addEventListener('keydown', (e) => {
 startBtn?.addEventListener('click', startGame);
 retryBtn?.addEventListener('click', startGame);
 submitScoreBtn?.addEventListener('click', (e) => saveScore(e));
-skipSubmitBtn?.
+skipSubmitBtn?.addEventListener('click', hideModal);
+
+// initial board render
+displayBoard();
