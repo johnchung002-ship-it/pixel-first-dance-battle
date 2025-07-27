@@ -15,19 +15,29 @@
         <span class="score-label">Score: <strong id="score">0</strong></span>
         <span class="combo-label">Combo: <strong id="combo">0</strong></span>
         <span class="accuracy-label">Accuracy: <strong id="accuracy">100%</strong></span>
-
-        <!-- Difficulty Selector -->
-        <label for="difficultySelect" class="difficulty-label">Difficulty:</label>
-        <select id="difficultySelect">
-          <option value="easy">Easy</option>
-          <option value="normal" selected>Normal</option>
-          <option value="hard">Hard</option>
-        </select>
-
         <button id="startBtn">Start</button>
         <button id="retryBtn" class="hidden">Retry</button>
       </div>
     </header>
+
+    <!-- Song Selection -->
+    <section id="song-selection">
+      <h2>Select Your Track</h2>
+      <div class="album-grid">
+        <div class="album" data-song="0">
+          <img src="cover1.png" alt="Song 1 Cover">
+          <p>Level Up</p>
+        </div>
+        <div class="album" data-song="1">
+          <img src="cover2.png" alt="Song 2 Cover">
+          <p>Pixel Dreams</p>
+        </div>
+        <div class="album" data-song="2">
+          <img src="cover3.png" alt="Song 3 Cover">
+          <p>Final Dance</p>
+        </div>
+      </div>
+    </section>
 
     <div id="stage-wrap">
       <canvas id="gameCanvas" width="480" height="640"></canvas>
@@ -69,10 +79,8 @@
       <h2>Final Score: <span id="finalScore">0</span></h2>
       <p>Enter your name:</p>
       <input id="guestName" maxlength="30" placeholder="Your Full Name" />
-
       <p>Leave a message for the Bride & Groom:</p>
       <textarea id="guestMessage" maxlength="100" placeholder="Congrats A & J!"></textarea>
-
       <div class="modal-buttons">
         <button id="submitScoreBtn">Submit</button>
         <button id="skipSubmitBtn">Skip</button>
@@ -81,17 +89,17 @@
   </div>
 
   <!-- Load Game Script as Module -->
-  
-  <!-- Song Select Modal -->
-<div id="songSelectModal" class="modal">
-  <div class="modal-content song-select">
-    <h2>Select a Track</h2>
-    <div class="song-grid">
-      <!-- Filled by game.js -->
-    </div>
-  </div>
-</div>
-
   <script type="module" src="game.js"></script>
+  <script>
+    // Song selection event
+    document.querySelectorAll('.album').forEach(album => {
+      album.addEventListener('click', () => {
+        const index = parseInt(album.dataset.song, 10);
+        import('./game.js').then(module => {
+          module.setCurrentSong(index);
+        });
+      });
+    });
+  </script>
 </body>
 </html>
