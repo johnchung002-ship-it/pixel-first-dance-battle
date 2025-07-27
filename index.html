@@ -100,6 +100,21 @@
         });
       });
     });
-  </script>
+<script>
+  // Song selection event
+  document.querySelectorAll('.album').forEach(album => {
+    album.addEventListener('click', () => {
+      const index = parseInt(album.dataset.song, 10);
+      // Hide the song selection UI
+      document.getElementById('song-selection').classList.add('hidden');
+
+      // Dynamically load selected track
+      import('./game.js').then(module => {
+        module.setCurrentSong(index);
+      });
+    });
+  });
+</script>
+
 </body>
 </html>
