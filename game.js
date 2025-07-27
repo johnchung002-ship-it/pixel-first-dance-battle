@@ -412,7 +412,7 @@ if (difficultySelect) {
   difficultySelect.addEventListener('change', (e) => {
     setDifficulty(e.target.value);
   });
-});
+}
 
 document.querySelectorAll('#mobile-controls button').forEach(btn => {
   btn.addEventListener('click', () => {
