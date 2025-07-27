@@ -362,10 +362,12 @@ function escapeHTML(str) {
 
 /* ---------------- Events ---------------- */
 document.addEventListener('keydown', (e) => {
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+  const arrows = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+  if (arrows.includes(e.key)) {
+    e.preventDefault();            // <-- stops the page from scrolling
     if (playing) judgeHit(e.key);
   }
-});
+}, { passive: false });
 
 startBtn?.addEventListener('click', startGame);
 retryBtn?.addEventListener('click', startGame);
