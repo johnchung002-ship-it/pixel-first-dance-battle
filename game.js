@@ -154,6 +154,7 @@ function resetState() {
   combo = 0;
   updateHUD();
   arrows = buildPatternForSnippet();
+  console.log("Generated arrows:", arrows); // DEBUG
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
   totalNotes = arrows.length;
   laneHighlights = [0, 0, 0, 0];
@@ -190,15 +191,17 @@ function endGame() {
   showModal();
 }
 
+/* --- FIXED PATTERN FOR TESTING --- */
 function buildPatternForSnippet() {
   const pattern = [];
   const beat = 60 / BPM;
   const noteStep = beat / NOTES_PER_BEAT;
   const endTime = SONG_OFFSET + SNIPPET_SECONDS;
+
+  let lane = 0;
   for (let t = SONG_OFFSET; t <= endTime; t += noteStep) {
-    if (Math.random() < 0.75) {
-      pattern.push({ lane: Math.floor(Math.random() * LANES.length), t });
-    }
+    pattern.push({ lane: lane % LANES.length, t });
+    lane++;
   }
   return pattern;
 }
@@ -206,6 +209,8 @@ function buildPatternForSnippet() {
 function getTime() {
   return (performance.now() / 1000) - startTime;
 }
+
+// ... (rest of your code is unchanged)
 
 function judgeHit(key) {
   const lane = LANES.indexOf(key);
