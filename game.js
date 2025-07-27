@@ -242,20 +242,26 @@ function draw() {
   const now = performance.now();
   const t = getTime();
 
-  // Draw receptor arrows
-  for (let i = 0; i < LANES.length; i++) {
-    const x = i * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
-    const flash = (now - receptorFlash[i]) < 100 ? 1 : 0;
-    ctx.globalAlpha = flash ? 1 : 0.6;
-    ctx.fillStyle = LANE_COLORS[i];
-    ctx.fillRect(i * LANE_WIDTH, HITLINE_Y - 4, LANE_WIDTH, 8);
-    ctx.globalAlpha = 1;
+// Draw receptor arrows
+for (let i = 0; i < LANES.length; i++) {
+  const x = i * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
+  const flash = (now - receptorFlash[i]) < 100 ? 1 : 0;
+  ctx.globalAlpha = flash ? 1 : 0.6;
 
-    const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][i];
-    if (spr.complete) {
-      ctx.drawImage(spr, x, HITLINE_Y - ARROW_SIZE - 10, ARROW_SIZE, ARROW_SIZE);
-    }
+  // Add glow
+  ctx.save();
+  ctx.shadowColor = LANE_COLORS[i];
+  ctx.shadowBlur = 20;
+
+  const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][i];
+  if (spr.complete) {
+    ctx.drawImage(spr, x, HITLINE_Y - ARROW_SIZE - 10, ARROW_SIZE, ARROW_SIZE);
   }
+  ctx.restore();
+
+  // Hitline bar
+  ctx.globalAlpha = 1;
+}
 
 // --- Hit Flashes (DDR-style rings with glow) ---
 const flashDuration = 200; // milliseconds
