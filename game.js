@@ -233,7 +233,6 @@ function updateHUD() {
   accuracyEl.textContent = `${acc}%`;
 }
 
-/* ---------------- Draw ---------------- */
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#111";
@@ -242,63 +241,82 @@ function draw() {
   const now = performance.now();
   const t = getTime();
 
-// Draw receptor arrows
-for (let i = 0; i < LANES.length; i++) {
-  const x = i * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
-  const flash = (now - receptorFlash[i]) < 100 ? 1 : 0;
-  ctx.globalAlpha = flash ? 1 : 0.6;
-
-  // Add glow
+  // --- Vertical Lane Lines ---
   ctx.save();
-  ctx.shadowColor = LANE_COLORS[i];
-  ctx.shadowBlur = 20;
-
-  const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][i];
-  if (spr.complete) {
-    ctx.drawImage(spr, x, HITLINE_Y - ARROW_SIZE - 10, ARROW_SIZE, ARROW_SIZE);
+  ctx.globalAlpha = 0.3;  // faint white lines
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < LANES.length; i++) {
+    const x = i * LANE_WIDTH;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
   }
   ctx.restore();
 
-  // Hitline bar
-  ctx.globalAlpha = 1;
-}
+  // --- Stationary Hitline ---
+  for (let i = 0; i < LANES.length; i++) {
+    ctx.save();
+    ctx.shadowColor = LANE_COLORS[i];
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = LANE_COLORS[i];
+    ctx.fillRect(i * LANE_WIDTH, HITLINE_Y - 4, LANE_WIDTH, 4);
+    ctx.restore();
+  }
 
-// --- Hit Flashes (DDR-style rings with glow) ---
-const flashDuration = 200; // milliseconds
-for (const flash of hitFlashes) {
-  const elapsed = performance.now() - flash.start;
-  if (elapsed > flashDuration) continue;
+  // --- Receptor Arrows with Glow ---
+  for (let i = 0; i < LANES.length; i++) {
+    const x = i * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
+    const flash = (now - receptorFlash[i]) < 100 ? 1 : 0;
+    ctx.globalAlpha = flash ? 1 : 0.6;
 
-  const progress = elapsed / flashDuration;
-  const alpha = 1 - progress;
-  const xCenter = flash.lane * LANE_WIDTH + LANE_WIDTH / 2;
-  const yCenter = HITLINE_Y - ARROW_SIZE / 2;
-  const radius = ARROW_SIZE * (0.6 + progress * 0.6);
+    ctx.save();
+    ctx.shadowColor = LANE_COLORS[i];
+    ctx.shadowBlur = 20;
+    const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][i];
+    if (spr.complete) {
+      ctx.drawImage(spr, x, HITLINE_Y - ARROW_SIZE - 10, ARROW_SIZE, ARROW_SIZE);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
 
-  ctx.save();
-  ctx.globalAlpha = alpha;
+  // --- Hit Flashes (DDR-style rings with glow) ---
+  const flashDuration = 200; // ms
+  for (const flash of hitFlashes) {
+    const elapsed = performance.now() - flash.start;
+    if (elapsed > flashDuration) continue;
 
-  // Create radial gradient for glow
-  const gradient = ctx.createRadialGradient(xCenter, yCenter, radius * 0.5, xCenter, yCenter, radius);
-  gradient.addColorStop(0, `${LANE_COLORS[flash.lane]}88`); // semi-transparent center
-  gradient.addColorStop(1, `${LANE_COLORS[flash.lane]}00`); // fade to transparent
+    const progress = elapsed / flashDuration;
+    const alpha = 1 - progress;
+    const xCenter = flash.lane * LANE_WIDTH + LANE_WIDTH / 2;
+    const yCenter = HITLINE_Y - ARROW_SIZE / 2;
+    const radius = ARROW_SIZE * (0.6 + progress * 0.6);
 
-  ctx.fillStyle = gradient;
-  ctx.beginPath();
-  ctx.arc(xCenter, yCenter, radius, 0, 2 * Math.PI);
-  ctx.fill();
+    ctx.save();
+    ctx.globalAlpha = alpha;
 
-  // Outer stroke ring
-  ctx.strokeStyle = LANE_COLORS[flash.lane];
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.arc(xCenter, yCenter, radius, 0, 2 * Math.PI);
-  ctx.stroke();
+    // Radial gradient glow
+    const gradient = ctx.createRadialGradient(xCenter, yCenter, radius * 0.5, xCenter, yCenter, radius);
+    gradient.addColorStop(0, `${LANE_COLORS[flash.lane]}88`);
+    gradient.addColorStop(1, `${LANE_COLORS[flash.lane]}00`);
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(xCenter, yCenter, radius, 0, 2 * Math.PI);
+    ctx.fill();
 
-  ctx.restore();
-}
+    // Outer ring
+    ctx.strokeStyle = LANE_COLORS[flash.lane];
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(xCenter, yCenter, radius, 0, 2 * Math.PI);
+    ctx.stroke();
 
-  // Draw falling arrows
+    ctx.restore();
+  }
+
+  // --- Falling Arrows ---
   for (const a of active) {
     if (a.judged) continue;
     const timeToHit = a.t - t;
@@ -312,33 +330,34 @@ for (const flash of hitFlashes) {
     ctx.drawImage(spr, x, y - ARROW_SIZE / 2, ARROW_SIZE, ARROW_SIZE);
   }
 
-// Feedback text with pulse
-if ((now - feedbackTime) < 600 && feedbackText) {
-  const pulse = 1 + 0.15 * Math.sin((now - feedbackTime) / 50);
-  ctx.save();
-  ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 30); // Just above receptors
-  ctx.scale(pulse, pulse);
-  ctx.font = "20px 'Press Start 2P', monospace";
-  ctx.fillStyle = feedbackColor;
-  ctx.textAlign = "center";
-  ctx.fillText(feedbackText, 0, 0);
-  ctx.restore();
-} else if ((now - feedbackTime) >= 600) {
-  feedbackText = '';
-}
+  // --- Feedback Text (Perfect/Good/Miss) ---
+  if ((now - feedbackTime) < 600 && feedbackText) {
+    const pulse = 1 + 0.15 * Math.sin((now - feedbackTime) / 50);
+    ctx.save();
+    ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 30); // near receptors
+    ctx.scale(pulse, pulse);
+    ctx.font = "20px 'Press Start 2P', monospace";
+    ctx.fillStyle = feedbackColor;
+    ctx.textAlign = "center";
+    ctx.fillText(feedbackText, 0, 0);
+    ctx.restore();
+  } else if ((now - feedbackTime) >= 600) {
+    feedbackText = '';
+  }
 
-// Combo count near receptors
-if (combo > 1) {
-  const life = (now - comboAnimStart) / 300;
-  const scale = Math.max(1, 1.2 - life * 0.2);
-  ctx.save();
-  ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 60); // Above hit words
-  ctx.scale(scale, scale);
-  ctx.font = "16px 'Press Start 2P', monospace";
-  ctx.fillStyle = "#fff";
-  ctx.textAlign = "center";
-  ctx.fillText(`${combo}x`, 0, 0);
-  ctx.restore();
+  // --- Combo Counter ---
+  if (combo > 1) {
+    const life = (now - comboAnimStart) / 300;
+    const scale = Math.max(1, 1.2 - life * 0.2);
+    ctx.save();
+    ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 60); // just above feedback text
+    ctx.scale(scale, scale);
+    ctx.font = "16px 'Press Start 2P', monospace";
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.fillText(`${combo}x`, 0, 0);
+    ctx.restore();
+  }
 }
 
 /* ---------------- Loop ---------------- */
