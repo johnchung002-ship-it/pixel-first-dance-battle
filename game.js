@@ -257,7 +257,7 @@ function draw() {
     }
   }
 
-  // --- Add Hit Flashes Here ---
+  // --- Hit Flashes ---
   const flashDuration = 150; // milliseconds
   for (const flash of hitFlashes) {
     const elapsed = performance.now() - flash.start;
@@ -270,7 +270,6 @@ function draw() {
     ctx.fillRect(x, HITLINE_Y - 40, LANE_WIDTH, 80);
     ctx.globalAlpha = 1;
   }
-  // --- End Hit Flashes ---
 
   // Draw falling arrows
   for (const a of active) {
@@ -286,22 +285,27 @@ function draw() {
     ctx.drawImage(spr, x, y - ARROW_SIZE / 2, ARROW_SIZE, ARROW_SIZE);
   }
 
-  // Feedback text
+  // Feedback text with pulse
   if ((now - feedbackTime) < 600 && feedbackText) {
-    ctx.font = "32px Arial";
+    const pulse = 1 + 0.2 * Math.sin((now - feedbackTime) / 50); // pulsing scale
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(pulse, pulse);
+    ctx.font = "32px 'Press Start 2P', monospace"; // pixel font
     ctx.fillStyle = feedbackColor;
     ctx.textAlign = "center";
-    ctx.fillText(feedbackText, canvas.width / 2, canvas.height / 2);
+    ctx.fillText(feedbackText, 0, 0);
+    ctx.restore();
   }
 
-  // Combo count
+  // Combo count with slight scale effect
   if (combo > 1) {
     const life = (now - comboAnimStart) / 300;
     const scale = Math.max(1, 1.2 - life * 0.2);
     ctx.save();
     ctx.translate(canvas.width - 80, 80);
     ctx.scale(scale, scale);
-    ctx.font = "28px Arial";
+    ctx.font = "18px 'Press Start 2P', monospace";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
     ctx.fillText(`${combo}x`, 0, 0);
