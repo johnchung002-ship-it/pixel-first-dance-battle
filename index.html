@@ -70,10 +70,8 @@
     </section>
   </div>
 
-  <!-- Music -->
-  <audio id="bgm" preload="auto" src="Ciara-Level-Up-15_7s-to-49_7s.mp3"></audio>
-   <audio id="bgm" preload="auto" src="apt_easy.mp3"></audio>
-   <audio id="bgm" preload="auto" src="butter_snippet.mp3"></audio>
+  <!-- Single Music Element -->
+  <audio id="bgm" preload="auto"></audio>
 
   <!-- Score Modal -->
   <div id="scoreModal" class="modal hidden">
@@ -92,30 +90,18 @@
 
   <!-- Load Game Script as Module -->
   <script type="module" src="game.js"></script>
+  
+  <!-- Song Selection Logic -->
   <script>
-    // Song selection event
     document.querySelectorAll('.album').forEach(album => {
       album.addEventListener('click', () => {
         const index = parseInt(album.dataset.song, 10);
+        document.getElementById('song-selection').classList.add('hidden');
         import('./game.js').then(module => {
           module.setCurrentSong(index);
         });
       });
     });
-<script>
-  // Song selection event
-  document.querySelectorAll('.album').forEach(album => {
-    album.addEventListener('click', () => {
-      const index = parseInt(album.dataset.song, 10);
-      // Hide the song selection UI
-      document.getElementById('song-selection').classList.add('hidden');
-
-      // Dynamically load selected track
-      import('./game.js').then(module => {
-        module.setCurrentSong(index);
-      });
-    });
-  });
-</script>
+  </script>
 </body>
 </html>
