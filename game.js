@@ -242,6 +242,7 @@ function draw() {
   const now = performance.now();
   const t = getTime();
 
+  // Draw receptor arrows
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
     const flash = (now - receptorFlash[i]) < 100 ? 1 : 0;
@@ -250,27 +251,28 @@ function draw() {
     ctx.fillRect(i * LANE_WIDTH, HITLINE_Y - 4, LANE_WIDTH, 8);
     ctx.globalAlpha = 1;
 
-    // --- Add Hit Flashes Here ---
-const flashDuration = 150; // milliseconds
-for (const flash of hitFlashes) {
-  const elapsed = performance.now() - flash.start;
-  if (elapsed > flashDuration) continue;
-
-  const alpha = 1 - elapsed / flashDuration;
-  const x = flash.lane * LANE_WIDTH;
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = LANE_COLORS[flash.lane];
-  ctx.fillRect(x, HITLINE_Y - 40, LANE_WIDTH, 80);
-  ctx.globalAlpha = 1;
-}
-// --- End Hit Flashes ---
-    
     const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][i];
     if (spr.complete) {
       ctx.drawImage(spr, x, HITLINE_Y - ARROW_SIZE - 10, ARROW_SIZE, ARROW_SIZE);
     }
   }
 
+  // --- Add Hit Flashes Here ---
+  const flashDuration = 150; // milliseconds
+  for (const flash of hitFlashes) {
+    const elapsed = performance.now() - flash.start;
+    if (elapsed > flashDuration) continue;
+
+    const alpha = 1 - elapsed / flashDuration;
+    const x = flash.lane * LANE_WIDTH;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = LANE_COLORS[flash.lane];
+    ctx.fillRect(x, HITLINE_Y - 40, LANE_WIDTH, 80);
+    ctx.globalAlpha = 1;
+  }
+  // --- End Hit Flashes ---
+
+  // Draw falling arrows
   for (const a of active) {
     if (a.judged) continue;
     const timeToHit = a.t - t;
@@ -284,6 +286,7 @@ for (const flash of hitFlashes) {
     ctx.drawImage(spr, x, y - ARROW_SIZE / 2, ARROW_SIZE, ARROW_SIZE);
   }
 
+  // Feedback text
   if ((now - feedbackTime) < 600 && feedbackText) {
     ctx.font = "32px Arial";
     ctx.fillStyle = feedbackColor;
@@ -291,6 +294,7 @@ for (const flash of hitFlashes) {
     ctx.fillText(feedbackText, canvas.width / 2, canvas.height / 2);
   }
 
+  // Combo count
   if (combo > 1) {
     const life = (now - comboAnimStart) / 300;
     const scale = Math.max(1, 1.2 - life * 0.2);
