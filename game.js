@@ -309,6 +309,15 @@ function endGame() {
 }
 
 function buildPatternForSnippet() {
+  // Use predefined beatmap for the current song
+  const beatmap = BEATMAPS[currentSongIndex];
+
+  if (beatmap && beatmap.length > 0) {
+    // Return a deep copy to avoid mutating the original
+    return beatmap.map(note => ({ ...note }));
+  }
+
+  // Fallback: random pattern if no beatmap is defined
   const pattern = [];
   const beat = 60 / BPM;
   const noteStep = beat / NOTES_PER_BEAT;
