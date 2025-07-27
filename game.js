@@ -8,6 +8,30 @@ import {
   query
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+/***** SONGS *****/
+export const SONGS = [
+  { title: "Apt (Easy)",      file: "apt_easy.mp3",                      bpm: 140, snippet: 30, cover: "apt2cover.png" },
+  { title: "Butter (Medium)", file: "butter_snippet.mp3",                bpm: 120, snippet: 30, cover: "cover2.png" },
+  { title: "Level Up (Hard)", file: "Ciara-Level-Up-15_7s-to-49_7s.mp3", bpm: 160, snippet: 32, cover: "cover3.png" }
+];
+
+let currentSongIndex = 0;
+
+/***** AUDIO *****/
+const bgm = document.getElementById('bgm');
+
+export function setCurrentSong(index) {
+  currentSongIndex = index;
+  const song = SONGS[index];
+  // update globals that depend on song, if you use them
+  BPM = song.bpm;
+  SNIPPET_SECONDS = song.snippet;
+  BEAT_INTERVAL = 60 / BPM;
+
+  bgm.src = song.file;
+  bgm.load();
+  console.log('Selected song:', song.title);
+}
 /***** CONFIG *****/
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 let CANVAS_W = 480, CANVAS_H = 640;
