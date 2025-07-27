@@ -13,7 +13,7 @@
   font-family: 'Press Start 2P', monospace;
 }
 
-* { 
+* {
   box-sizing: border-box;
 }
 
@@ -21,7 +21,7 @@ html, body {
   overscroll-behavior: contain; /* Prevent bounce while allowing scroll */
   height: 100%;
   overflow-x: hidden;
-  -webkit-text-size-adjust: 100%; /* Prevents iOS font auto-zoom */
+  -webkit-text-size-adjust: 100%; /* Prevent iOS font auto-zoom */
 }
 
 body {
@@ -55,20 +55,19 @@ body {
   box-shadow: 0 0 16px rgba(0,0,0,0.6);
   margin-bottom: 16px;
   animation: pulse-floor 1.07s infinite ease-in-out;
-  max-width: 100%;
+}
+
+canvas#gameCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 @keyframes pulse-floor {
   0%, 100% { filter: brightness(1); }
   50% { filter: brightness(1.1); }
-}
-
-/* Canvas scaling */
-canvas#gameCanvas {
-  width: 100%;
-  height: auto;
-  display: block;
-  max-width: 100%;
 }
 
 /* Mobile Controls */
@@ -92,7 +91,7 @@ canvas#gameCanvas {
   transition: all 0.2s ease, transform 0.1s ease;
   text-shadow: 0 0 4px #000, 0 0 8px #FFD700;
   width: 100%;
-  touch-action: manipulation; /* Prevent double-tap zoom but allow scroll */
+  touch-action: manipulation;
 }
 
 #mobile-controls button:hover {
@@ -108,21 +107,11 @@ canvas#gameCanvas {
   transform: scale(1.1);
 }
 
+/* Mobile adjustments */
 @media (max-width: 600px) {
-  #mobile-controls {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-  }
-
   #game-root {
+    width: 95%;
     padding: 6px;
-    max-width: 95vw;
-  }
-
-  #stage-wrap {
-    max-width: 100%;
-    height: auto;
   }
 
   canvas#gameCanvas {
@@ -130,9 +119,14 @@ canvas#gameCanvas {
     height: auto !important;
   }
 
+  #mobile-controls {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
   .album img {
     width: 90px;
     height: 90px;
-    max-width: 20vw;
   }
 }
