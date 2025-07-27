@@ -112,7 +112,8 @@ header h1 {
 
 /* Unified styling for difficulty + start buttons */
 #hud .difficulty-label {
-  font-size: 10px;
+  font-size: 14px;
+  font-weight: bold;
   color: #FFD700;
   text-shadow: 0 0 3px #c29e57;
   margin-right: 6px;
