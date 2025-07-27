@@ -38,8 +38,8 @@ window.addEventListener(
     const isTypingElement =
       document.activeElement &&
       (document.activeElement.tagName === 'INPUT' ||
-       document.activeElement.tagName === 'TEXTAREA' ||
-       document.activeElement.isContentEditable);
+        document.activeElement.tagName === 'TEXTAREA' ||
+        document.activeElement.isContentEditable);
 
     if (!isTypingElement &&
         ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
@@ -129,6 +129,14 @@ function setDifficulty(mode) {
 }
 setDifficulty(difficultySelect ? difficultySelect.value : 'normal');
 
+/* --- Modal Helpers --- */
+function showModal() {
+  if (scoreModal) scoreModal.classList.remove('hidden');
+}
+function hideModal() {
+  if (scoreModal) scoreModal.classList.add('hidden');
+}
+
 /* --- Prevent dropdown stealing focus during gameplay --- */
 function lockDifficultySelect() {
   if (difficultySelect) {
@@ -191,17 +199,15 @@ function endGame() {
   showModal();
 }
 
-/* --- FIXED PATTERN FOR TESTING --- */
 function buildPatternForSnippet() {
   const pattern = [];
   const beat = 60 / BPM;
   const noteStep = beat / NOTES_PER_BEAT;
   const endTime = SONG_OFFSET + SNIPPET_SECONDS;
-
-  let lane = 0;
   for (let t = SONG_OFFSET; t <= endTime; t += noteStep) {
-    pattern.push({ lane: lane % LANES.length, t });
-    lane++;
+    if (Math.random() < 0.75) {
+      pattern.push({ lane: Math.floor(Math.random() * LANES.length), t });
+    }
   }
   return pattern;
 }
@@ -209,8 +215,6 @@ function buildPatternForSnippet() {
 function getTime() {
   return (performance.now() / 1000) - startTime;
 }
-
-// ... (rest of your code is unchanged)
 
 function judgeHit(key) {
   const lane = LANES.indexOf(key);
@@ -286,19 +290,15 @@ function draw() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
   const now = performance.now();
+  const t = getTime();
 
-  // --- Background Beat Pulse ---
-  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+  const beatTime = ((t - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
   const pulse = 0.25 + 0.15 * Math.sin(beatTime * Math.PI * 2);
   ctx.fillStyle = `rgba(255, 105, 180, ${pulse * 0.2})`;
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
-    if (now - laneHighlights[i] < 150) {
-      ctx.fillStyle = 'rgba(0,255,150,0.2)';
-      ctx.fillRect(x, 0, LANE_WIDTH, CANVAS_H);
-    }
     ctx.strokeStyle = '#333';
     ctx.strokeRect(x, 0, LANE_WIDTH, CANVAS_H);
 
@@ -308,144 +308,21 @@ function draw() {
     ctx.fillText(label, x + (LANE_WIDTH / 2) - ctx.measureText(label).width / 2, 24);
   }
 
-  ctx.strokeStyle = '#888';
-  ctx.beginPath();
-  ctx.moveTo(0, HITLINE_Y);
-  ctx.lineTo(CANVAS_W, HITLINE_Y);
-  ctx.stroke();
-
-  for (let i = 0; i < LANES.length; i++) {
-    drawReceptor(ctx, i);
-  }
-
-  const t = getTime();
   for (const a of active) {
     if (a.judged) continue;
     const y = HITLINE_Y - (a.t - t) * ARROW_SPEED;
     if (y < -ARROW_SIZE || y > CANVAS_H + ARROW_SIZE) continue;
     const x = a.lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
+
+    // DEBUG outline
+    ctx.strokeStyle = 'rgba(0,255,0,0.5)';
+    ctx.strokeRect(x, y, ARROW_SIZE, ARROW_SIZE);
+
     drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
   }
-
-  drawHitFlashes();
-
-  if (feedbackText && now - feedbackTime < 300) {
-    ctx.fillStyle = feedbackColor;
-    ctx.font = '24px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(feedbackText, CANVAS_W / 2, HITLINE_Y - 40);
-  }
-
-  if (combo > 0) {
-    const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
-    const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2);
-    const beatGlow = 12 + 8 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
-
-    ctx.save();
-    ctx.translate(CANVAS_W / 2, HITLINE_Y + 60);
-    ctx.scale(beatScale, beatScale);
-    ctx.globalAlpha = 1;
-
-    ctx.shadowColor = '#00ff9d';
-    ctx.shadowBlur = beatGlow;
-
-    ctx.fillStyle = '#00ff9d';
-    ctx.font = '20px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${combo} Combo`, 0, 0);
-
-    ctx.restore();
-  }
-
-  drawCountdownOverlay(t, now);
-  ctx.textAlign = 'left';
 }
 
-/* --- Countdown overlay --- */
-function drawCountdownOverlay(t, nowMs) {
-  if (t < SONG_OFFSET) {
-    const remaining = SONG_OFFSET - t;
-    let text = '';
-    if (remaining > 1) text = '2';
-    else if (remaining > 0) text = '1';
-    else text = '';
-
-    if (text) {
-      ctx.save();
-      ctx.font = '48px "Press Start 2P", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#FFD700';
-      ctx.shadowColor = '#c29e57';
-      ctx.shadowBlur = 12;
-
-      const scale = 1 + 0.1 * Math.sin((remaining % 1) * Math.PI);
-      ctx.translate(CANVAS_W / 2, CANVAS_H / 3);
-      ctx.scale(scale, scale);
-      ctx.fillText(text, 0, 0);
-      ctx.restore();
-    }
-  } else if (nowMs < showDanceUntil) {
-    ctx.save();
-    ctx.font = '32px "Press Start 2P", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#FF69B4';
-    ctx.shadowColor = '#fff';
-    ctx.shadowBlur = 14;
-    ctx.fillText('DANCE!', CANVAS_W / 2, CANVAS_H / 3);
-    ctx.restore();
-  }
-}
-
-/* --- Beat Pulse Receptor --- */
-function drawReceptor(ctx, lane) {
-  const flashDuration = 150;
-  const age = performance.now() - receptorFlash[lane];
-  const alpha = age < flashDuration ? 1 : 0.85;
-
-  const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
-  const y = HITLINE_Y - ARROW_SIZE / 2;
-
-  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
-  const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
-  const pulseGlow = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
-
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.translate(x + ARROW_SIZE / 2, y + ARROW_SIZE / 2);
-  ctx.scale(pulseScale, pulseScale);
-  ctx.translate(-ARROW_SIZE / 2, -ARROW_SIZE / 2);
-
-  ctx.shadowColor = '#fff';
-  ctx.shadowBlur = age < flashDuration ? 20 : pulseGlow;
-
-  drawArrowSprite(ctx, 0, 0, ARROW_SIZE, lane);
-  ctx.restore();
-}
-
-/* --- Hit Flash Rings --- */
-function drawHitFlashes() {
-  const now = performance.now();
-  hitFlashes = hitFlashes.filter(f => now - f.start < 250);
-
-  for (const f of hitFlashes) {
-    const progress = (now - f.start) / 250;
-    const alpha = 1 - progress;
-    const size = ARROW_SIZE + 30 * progress;
-
-    const x = f.lane * LANE_WIDTH + (LANE_WIDTH / 2);
-    const y = HITLINE_Y;
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = LANE_COLORS[f.lane];
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
+/* --- Draw Arrow Sprite --- */
 function drawArrowSprite(ctx, x, y, size, lane) {
   const names = ['left', 'down', 'up', 'right'];
   const img = arrowSprites[names[lane]];
@@ -535,9 +412,8 @@ if (difficultySelect) {
   difficultySelect.addEventListener('change', (e) => {
     setDifficulty(e.target.value);
   });
-}
+});
 
-// Mobile button controls
 document.querySelectorAll('#mobile-controls button').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.key;
@@ -545,27 +421,5 @@ document.querySelectorAll('#mobile-controls button').forEach(btn => {
   });
 });
 
-// Inject CSS for larger mobile buttons
-const style = document.createElement('style');
-style.innerHTML = `
-  @media (max-width: 768px) {
-    #mobile-controls button {
-      font-size: 1.5rem !important;
-      padding: 1rem 1.5rem !important;
-      min-width: 70px !important;
-      margin: 0.3rem;
-    }
-  }
-`;
-document.head.appendChild(style);
-
 // Initial board render
 displayBoard();
-
-/* ---------------- Auto-scroll to mobile controls on load ---------------- */
-window.addEventListener('load', () => {
-  const controls = document.getElementById('mobile-controls');
-  if (controls) {
-    controls.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-});
