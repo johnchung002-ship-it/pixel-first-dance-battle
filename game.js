@@ -316,30 +316,29 @@ for (const flash of hitFlashes) {
 if ((now - feedbackTime) < 600 && feedbackText) {
   const pulse = 1 + 0.15 * Math.sin((now - feedbackTime) / 50);
   ctx.save();
-  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 30); // Just above receptors
   ctx.scale(pulse, pulse);
-  ctx.font = "20px 'Press Start 2P', monospace"; // smaller pixel font
+  ctx.font = "20px 'Press Start 2P', monospace";
   ctx.fillStyle = feedbackColor;
   ctx.textAlign = "center";
   ctx.fillText(feedbackText, 0, 0);
   ctx.restore();
 } else if ((now - feedbackTime) >= 600) {
-  feedbackText = ''; // Clear feedback text after display
+  feedbackText = '';
 }
 
-  // Combo count with slight scale effect
-  if (combo > 1) {
-    const life = (now - comboAnimStart) / 300;
-    const scale = Math.max(1, 1.2 - life * 0.2);
-    ctx.save();
-    ctx.translate(canvas.width - 80, 80);
-    ctx.scale(scale, scale);
-    ctx.font = "18px 'Press Start 2P', monospace";
-    ctx.fillStyle = "#fff";
-    ctx.textAlign = "center";
-    ctx.fillText(`${combo}x`, 0, 0);
-    ctx.restore();
-  }
+// Combo count near receptors
+if (combo > 1) {
+  const life = (now - comboAnimStart) / 300;
+  const scale = Math.max(1, 1.2 - life * 0.2);
+  ctx.save();
+  ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 60); // Above hit words
+  ctx.scale(scale, scale);
+  ctx.font = "16px 'Press Start 2P', monospace";
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "center";
+  ctx.fillText(`${combo}x`, 0, 0);
+  ctx.restore();
 }
 
 /* ---------------- Loop ---------------- */
