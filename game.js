@@ -11,14 +11,14 @@ import {
 /***** SONG SETUP *****/
 const SONGS = [
   {
-    title: "Level Up",
+    title: "Apt",
     file: "Ciara-Level-Up-15_7s-to-49_7s.mp3",
     bpm: 140,
     snippet: 30,
     cover: "cover1.png"
   },
   {
-    title: "Pixel Dreams",
+    title: "Butter",
     file: "test-tone.mp3",
     bpm: 120,
     snippet: 30,
