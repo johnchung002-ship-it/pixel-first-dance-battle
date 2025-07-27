@@ -10,9 +10,9 @@ import {
 
 /***** SONG SETUP *****/
 const SONGS = [
-  { title: "Apt (Easy)",      file: "apt_easy.mp3",                         bpm: 140, snippet: 30, cover: "apt2cover.png" },
-  { title: "Butter (Medium)", file: "butter_snippet.mp3",                   bpm: 120, snippet: 30, cover: "cover2.png" },
-  { title: "Level Up (Hard)", file: "Ciara-Level-Up-15_7s-to-49_7s.mp3",    bpm: 160, snippet: 30, cover: "cover3.png" }
+  { title: "Apt (Easy)", file: "apt_easy.mp3", bpm: 140, snippet: 30, cover: "apt2cover.png" },
+  { title: "Butter (Medium)", file: "butter_snippet.mp3", bpm: 120, snippet: 30, cover: "cover2.png" },
+  { title: "Level Up (Hard)", file: "Ciara-Level-Up-15_7s-to-49_7s.mp3", bpm: 160, snippet: 30, cover: "cover3.png" }
 ];
 
 let currentSongIndex = 0;
@@ -20,7 +20,6 @@ let currentSongIndex = 0;
 /***** CONFIG *****/
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 let CANVAS_W = 480, CANVAS_H = 640;
-
 const HITLINE_Y = 520;
 const ARROW_SIZE = 64;
 let LANE_WIDTH = CANVAS_W / LANES.length;
@@ -45,12 +44,11 @@ function setCurrentSong(index) {
   BPM = SONGS[index].bpm;
   SNIPPET_SECONDS = SONGS[index].snippet;
   BEAT_INTERVAL = 60 / BPM;
-  if (bgm) {
-    bgm.src = SONGS[index].file;
-    bgm.load();
-  }
+  bgm.src = SONGS[index].file;
+  bgm.load();
   console.log("Selected song:", SONGS[index].title);
 }
+export { setCurrentSong };
 
 /* ---------------- Canvas ---------------- */
 const canvas = document.getElementById('gameCanvas');
@@ -72,9 +70,6 @@ const guestMessageInput = document.getElementById('guestMessage');
 
 const messageBoardBody = document.querySelector('#messageBoard tbody');
 
-/* --- Song list UI --- */
-const trackCards = document.querySelectorAll('.track-card');
-
 let playing = false;
 let startTime = 0;
 let arrows = [];
@@ -93,7 +88,7 @@ let feedbackTime = 0;
 let comboAnimStart = 0;
 
 let hitFlashes = [];
-let showDanceUntil = 0; // Countdown state
+let showDanceUntil = 0;
 let lastGameEnd = 0;
 
 /* --- Load Arrow Sprites --- */
@@ -135,15 +130,6 @@ function resetState() {
 function startGame() {
   if (performance.now() - lastGameEnd < 300) return;
 
-  if (!canvas || !ctx) {
-    console.error("Canvas or context missing");
-    return;
-  }
-  if (!bgm) {
-    console.error("Audio element #bgm missing");
-    return;
-  }
-
   resetState();
   playing = true;
   retryBtn?.classList.add('hidden');
@@ -162,8 +148,8 @@ function endGame() {
   playing = false;
   lastGameEnd = performance.now();
   cancelAnimationFrame(raf);
-  if (bgm) bgm.pause();
-  if (finalScoreEl) finalScoreEl.textContent = score;
+  bgm.pause();
+  finalScoreEl.textContent = score;
   retryBtn?.classList.remove('hidden');
   showModal();
 }
@@ -187,8 +173,7 @@ function getTime() {
 
 function judgeHit(key) {
   const lane = LANES.indexOf(key);
-  if (lane === -1) return;
-  if (!playing) return;
+  if (lane === -1 || !playing) return;
 
   const t = getTime();
   let best = null;
@@ -214,7 +199,6 @@ function judgeHit(key) {
 
 function applyHit(arrow, result) {
   arrow.judged = true;
-  arrow.result = result;
   score += (result === 'perfect' ? 300 : 100);
   feedbackText = result.toUpperCase() + '!';
   feedbackColor = (result === 'perfect' ? '#4dff88' : '#ffd24d');
@@ -243,17 +227,15 @@ function missOldArrows() {
 }
 
 function updateHUD() {
-  if (scoreEl) scoreEl.textContent = score;
-  if (comboEl) comboEl.textContent = combo;
+  scoreEl.textContent = score;
+  comboEl.textContent = combo;
   const acc = totalNotes ? Math.round((hits / totalNotes) * 100) : 100;
-  if (accuracyEl) accuracyEl.textContent = `${acc}%`;
+  accuracyEl.textContent = `${acc}%`;
 }
 
 /* ---------------- Draw ---------------- */
 function draw() {
-  if (!ctx || !canvas) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
   ctx.fillStyle = "#111";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -268,12 +250,10 @@ function draw() {
     ctx.fillRect(i * LANE_WIDTH, HITLINE_Y - 4, LANE_WIDTH, 8);
     ctx.globalAlpha = 1;
 
-    ctx.globalAlpha = flash ? 1 : 0.8;
     const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][i];
     if (spr.complete) {
       ctx.drawImage(spr, x, HITLINE_Y - ARROW_SIZE - 10, ARROW_SIZE, ARROW_SIZE);
     }
-    ctx.globalAlpha = 1;
   }
 
   for (const a of active) {
@@ -287,7 +267,6 @@ function draw() {
     const diff = Math.abs(timeToHit);
     ctx.globalAlpha = diff <= HIT_WINDOW_PERFECT ? 1 : diff <= HIT_WINDOW_GOOD ? 0.85 : 0.7;
     ctx.drawImage(spr, x, y - ARROW_SIZE / 2, ARROW_SIZE, ARROW_SIZE);
-    ctx.globalAlpha = 1;
   }
 
   if ((now - feedbackTime) < 600 && feedbackText) {
@@ -331,7 +310,6 @@ function showModal() { scoreModal?.classList.remove('hidden'); }
 function hideModal() { scoreModal?.classList.add('hidden'); }
 
 const scoresCollection = collection(db, "scores");
-
 async function saveScore(event) {
   event?.preventDefault();
   let initials = (guestNameInput?.value || '---').trim();
@@ -381,16 +359,6 @@ function escapeHTML(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
-
-/* ---------------- Track Selection Events ---------------- */
-trackCards.forEach(card => {
-  card.addEventListener('click', () => {
-    const index = Number(card.dataset.index);
-    setCurrentSong(index);
-    trackCards.forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
-  });
-});
 
 /* ---------------- Events ---------------- */
 document.addEventListener('keydown', (e) => {
