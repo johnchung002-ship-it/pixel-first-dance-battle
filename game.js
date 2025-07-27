@@ -241,9 +241,27 @@ function draw() {
   const now = performance.now();
   const t = getTime();
 
+  // --- Pulsing Background Behind Arrows ---
+  const beatTime = (60 / BPM); // duration of one beat in seconds
+  const pulse = 0.3 + 0.2 * Math.sin((getTime() / beatTime) * Math.PI * 2);
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = "#222"; // subtle dark overlay
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  // Optional lane-based pulse
+  for (let i = 0; i < LANES.length; i++) {
+    ctx.save();
+    ctx.globalAlpha = 0.05 + 0.1 * pulse;
+    ctx.fillStyle = LANE_COLORS[i];
+    ctx.fillRect(i * LANE_WIDTH, 0, LANE_WIDTH, canvas.height);
+    ctx.restore();
+  }
+
   // --- Vertical Lane Lines ---
   ctx.save();
-  ctx.globalAlpha = 0.3;  // faint white lines
+  ctx.globalAlpha = 0.3;
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 1;
   for (let i = 1; i < LANES.length; i++) {
@@ -332,10 +350,10 @@ function draw() {
 
   // --- Feedback Text (Perfect/Good/Miss) ---
   if ((now - feedbackTime) < 600 && feedbackText) {
-    const pulse = 1 + 0.15 * Math.sin((now - feedbackTime) / 50);
+    const pulseText = 1 + 0.15 * Math.sin((now - feedbackTime) / 50);
     ctx.save();
-    ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 30); // near receptors
-    ctx.scale(pulse, pulse);
+    ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 30);
+    ctx.scale(pulseText, pulseText);
     ctx.font = "20px 'Press Start 2P', monospace";
     ctx.fillStyle = feedbackColor;
     ctx.textAlign = "center";
@@ -350,7 +368,7 @@ function draw() {
     const life = (now - comboAnimStart) / 300;
     const scale = Math.max(1, 1.2 - life * 0.2);
     ctx.save();
-    ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 60); // just above feedback text
+    ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 60);
     ctx.scale(scale, scale);
     ctx.font = "16px 'Press Start 2P', monospace";
     ctx.fillStyle = "#fff";
