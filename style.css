@@ -110,50 +110,49 @@ header h1 {
   text-shadow: 0 0 4px currentColor;
 }
 
-#hud button {
-  cursor: pointer;
-  background: #FFD700;
-  border: 2px solid #c29e57;
-  padding: 6px 12px;
-  color: #4b2e2e;
-  font-weight: bold;
-  border-radius: 6px;
-  font-family: 'Press Start 2P', monospace;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.4);
-  transition: all 0.3s ease;
-}
-
-#hud button:hover {
-  background: #FF69B4;
-  border-color: #d1588f;
-  color: #fff;
-  text-shadow: 0 0 4px rgba(255,255,255,0.7);
-  transform: scale(1.05);
-}
-
-/* Difficulty Dropdown */
-.difficulty-label {
+/* Unified styling for difficulty + start buttons */
+#hud .difficulty-label {
   font-size: 10px;
   color: #FFD700;
   text-shadow: 0 0 3px #c29e57;
+  margin-right: 6px;
 }
 
-#difficultySelect {
+#hud #difficultySelect,
+#hud button {
+  min-width: 100px;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 6px;
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
-  color: #4b2e2e;
-  background: #FFD700;
-  border: 2px solid #c29e57;
-  border-radius: 4px;
-  padding: 4px 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
-#difficultySelect:hover {
+#hud #difficultySelect {
+  background: #222;
+  color: #FFD700;
+  border: 2px solid #FFD700;
+  text-transform: uppercase;
+}
+
+#hud #difficultySelect:hover {
+  background: #FFD700;
+  color: #222;
+  border-color: #c29e57;
+}
+
+#hud button.start-btn {
   background: #FF69B4;
+  border: 2px solid #d1588f;
   color: #fff;
-  border-color: #d1588f;
+  text-shadow: 0 0 3px rgba(0,0,0,0.5);
+}
+
+#hud button.start-btn:hover {
+  background: #FFD700;
+  color: #4b2e2e;
+  border-color: #c29e57;
+  transform: scale(1.05);
 }
 
 .hidden { display: none !important; }
@@ -322,6 +321,7 @@ header h1 {
   position: relative;
   z-index: 2;
 }
+
 /* -------------------------
    Mobile UX fixes (2025-07-26)
    ------------------------- */
@@ -346,8 +346,8 @@ html, body {
 }
 
 #mobile-controls button {
-  font-size: 18px;              /* >=16px prevents Safari zoom */
-  touch-action: manipulation;   /* Avoids double-tap zoom */
+  font-size: 18px; /* >=16px prevents Safari zoom */
+  touch-action: manipulation;
   padding: 10px 15px;
   margin: 5px;
   border: none;
