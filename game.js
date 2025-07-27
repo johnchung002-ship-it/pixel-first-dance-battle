@@ -8,58 +8,57 @@ import {
   query
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-/***** SONG SETUP *****/
-const SONGS = [
-  { title: "Apt (Easy)", file: "apt_easy.mp3", bpm: 140, snippet: 30, cover: "apt2cover.png" },
-  { title: "Butter (Medium)", file: "butter_snippet.mp3", bpm: 120, snippet: 30, cover: "cover2.png" },
-  { title: "Level Up (Hard)", file: "Ciara-Level-Up-15_7s-to-49_7s.mp3", bpm: 160, snippet: 30, cover: "cover3.png" }
-];
-
-let currentSongIndex = 0;
-
 /***** CONFIG *****/
 const LANES = ['ArrowLeft', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
 let CANVAS_W = 480, CANVAS_H = 640;
+
 const HITLINE_Y = 520;
 const ARROW_SIZE = 64;
 let LANE_WIDTH = CANVAS_W / LANES.length;
 
-let BPM = SONGS[currentSongIndex].bpm;
+const BPM = 140;
 const NOTES_PER_BEAT = 2;
 const SONG_OFFSET = 1.0;
-let SNIPPET_SECONDS = SONGS[currentSongIndex].snippet;
+const SNIPPET_SECONDS = 30;
 
+// Defaults (Normal)
 let HIT_WINDOW_PERFECT = 0.08;
 let HIT_WINDOW_GOOD = 0.15;
 let ARROW_SPEED = 350;
 
-let BEAT_INTERVAL = 60 / BPM;
+const BEAT_INTERVAL = 60 / BPM;
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
-
+const MAX_ROWS = 50;
 /******************/
-/* ---------------- Audio ---------------- */
-const bgm = document.getElementById('bgm');
-function setCurrentSong(index) {
-  currentSongIndex = index;
-  BPM = SONGS[index].bpm;
-  SNIPPET_SECONDS = SONGS[index].snippet;
-  BEAT_INTERVAL = 60 / BPM;
-  bgm.src = SONGS[index].file;
-  bgm.load();
-  console.log("Selected song:", SONGS[index].title);
-}
-export { setCurrentSong };
 
-/* ---------------- Canvas ---------------- */
+// Prevent arrow keys / space from scrolling the page **unless typing in inputs**
+window.addEventListener(
+  "keydown",
+  function (e) {
+    const isTypingElement =
+      document.activeElement &&
+      (document.activeElement.tagName === 'INPUT' ||
+       document.activeElement.tagName === 'TEXTAREA' ||
+       document.activeElement.isContentEditable);
+
+    if (!isTypingElement &&
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+      e.preventDefault();
+    }
+  },
+  { passive: false }
+);
+
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas?.getContext('2d');
+const ctx = canvas.getContext('2d');
+const bgm = document.getElementById('bgm');
 
-/* ---------------- HUD Elements ---------------- */
 const scoreEl = document.getElementById('score');
 const comboEl = document.getElementById('combo');
 const accuracyEl = document.getElementById('accuracy');
 const startBtn = document.getElementById('startBtn');
 const retryBtn = document.getElementById('retryBtn');
+const difficultySelect = document.getElementById('difficultySelect');
 
 const scoreModal = document.getElementById('scoreModal');
 const finalScoreEl = document.getElementById('finalScore');
@@ -88,8 +87,9 @@ let feedbackTime = 0;
 let comboAnimStart = 0;
 
 let hitFlashes = [];
+
+// Countdown state
 let showDanceUntil = 0;
-let lastGameEnd = 0;
 
 /* --- Load Arrow Sprites --- */
 const arrowSprites = {
@@ -105,12 +105,47 @@ arrowSprites.right.src = "arrow_right.png";
 
 /* ---------------- Responsive Canvas ---------------- */
 function resizeCanvasIfNeeded() {
-  if (!canvas) return;
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
   LANE_WIDTH = CANVAS_W / LANES.length;
 }
 resizeCanvasIfNeeded();
+
+/* ---------------- Difficulty ---------------- */
+function setDifficulty(mode) {
+  if (mode === 'easy') {
+    ARROW_SPEED = 200;
+    HIT_WINDOW_PERFECT = 0.12;
+    HIT_WINDOW_GOOD = 0.22;
+  } else if (mode === 'hard') {
+    ARROW_SPEED = 480;
+    HIT_WINDOW_PERFECT = 0.06;
+    HIT_WINDOW_GOOD = 0.12;
+  } else {
+    ARROW_SPEED = 350;
+    HIT_WINDOW_PERFECT = 0.08;
+    HIT_WINDOW_GOOD = 0.15;
+  }
+}
+setDifficulty(difficultySelect ? difficultySelect.value : 'normal');
+
+/* --- Prevent dropdown stealing focus during gameplay --- */
+function lockDifficultySelect() {
+  if (difficultySelect) {
+    difficultySelect.setAttribute('tabindex', '-1');
+    difficultySelect.blur();
+    difficultySelect.addEventListener('keydown', blockWhilePlaying);
+  }
+}
+function unlockDifficultySelect() {
+  if (difficultySelect) {
+    difficultySelect.removeAttribute('tabindex');
+    difficultySelect.removeEventListener('keydown', blockWhilePlaying);
+  }
+}
+function blockWhilePlaying(e) {
+  if (playing) e.preventDefault();
+}
 
 /* ---------------- Core ---------------- */
 function resetState() {
@@ -119,6 +154,7 @@ function resetState() {
   combo = 0;
   updateHUD();
   arrows = buildPatternForSnippet();
+  console.log('Arrows generated:', arrows); // DEBUG
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
   totalNotes = arrows.length;
   laneHighlights = [0, 0, 0, 0];
@@ -128,9 +164,9 @@ function resetState() {
 }
 
 function startGame() {
-  if (performance.now() - lastGameEnd < 300) return;
-
+  console.log('Game started'); // DEBUG
   resetState();
+  lockDifficultySelect();
   playing = true;
   retryBtn?.classList.add('hidden');
   startBtn?.classList.add('hidden');
@@ -139,17 +175,19 @@ function startGame() {
   startTime = performance.now() / 1000;
   showDanceUntil = performance.now() + 500;
 
-  bgm.currentTime = 0;
-  bgm.play().catch(err => console.warn('Music blocked:', err));
+  if (bgm) {
+    bgm.currentTime = 0;
+    bgm.play().catch(err => console.warn('Music blocked:', err));
+  }
   loop();
 }
 
 function endGame() {
   playing = false;
-  lastGameEnd = performance.now();
+  unlockDifficultySelect();
   cancelAnimationFrame(raf);
-  bgm.pause();
-  finalScoreEl.textContent = score;
+  if (bgm) bgm.pause();
+  if (finalScoreEl) finalScoreEl.textContent = score;
   retryBtn?.classList.remove('hidden');
   showModal();
 }
@@ -172,8 +210,9 @@ function getTime() {
 }
 
 function judgeHit(key) {
+  console.log('Hit judged:', key); // DEBUG
   const lane = LANES.indexOf(key);
-  if (lane === -1 || !playing) return;
+  if (lane === -1) return;
 
   const t = getTime();
   let best = null;
@@ -199,15 +238,22 @@ function judgeHit(key) {
 
 function applyHit(arrow, result) {
   arrow.judged = true;
-  score += (result === 'perfect' ? 300 : 100);
-  feedbackText = result.toUpperCase() + '!';
-  feedbackColor = (result === 'perfect' ? '#4dff88' : '#ffd24d');
+  if (result === 'perfect') {
+    score += 300;
+    feedbackText = 'PERFECT!';
+    feedbackColor = '#4dff88';
+  } else {
+    score += 100;
+    feedbackText = 'GOOD!';
+    feedbackColor = '#ffd24d';
+  }
   combo++;
   comboAnimStart = performance.now();
   hits++;
   feedbackTime = performance.now();
   laneHighlights[arrow.lane] = performance.now();
   receptorFlash[arrow.lane] = performance.now();
+
   hitFlashes.push({ lane: arrow.lane, start: performance.now() });
   updateHUD();
 }
@@ -227,155 +273,181 @@ function missOldArrows() {
 }
 
 function updateHUD() {
-  scoreEl.textContent = score;
-  comboEl.textContent = combo;
+  if (scoreEl) scoreEl.textContent = score;
+  if (comboEl) comboEl.textContent = combo;
   const acc = totalNotes ? Math.round((hits / totalNotes) * 100) : 100;
-  accuracyEl.textContent = `${acc}%`;
+  if (accuracyEl) accuracyEl.textContent = `${acc}%`;
 }
 
+/* ---------------- Draw ---------------- */
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#111";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
   const now = performance.now();
-  const t = getTime();
 
-  // --- Pulsing Background Behind Arrows ---
-  const beatTime = (60 / BPM); // duration of one beat in seconds
-  const pulse = 0.3 + 0.2 * Math.sin((getTime() / beatTime) * Math.PI * 2);
-  ctx.save();
-  ctx.globalAlpha = pulse;
-  ctx.fillStyle = "#222"; // subtle dark overlay
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.restore();
+  // --- Background Beat Pulse ---
+  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+  const pulse = 0.25 + 0.15 * Math.sin(beatTime * Math.PI * 2);
+  ctx.fillStyle = `rgba(255, 105, 180, ${pulse * 0.2})`;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // Optional lane-based pulse
   for (let i = 0; i < LANES.length; i++) {
-    ctx.save();
-    ctx.globalAlpha = 0.05 + 0.1 * pulse;
-    ctx.fillStyle = LANE_COLORS[i];
-    ctx.fillRect(i * LANE_WIDTH, 0, LANE_WIDTH, canvas.height);
-    ctx.restore();
-  }
-
-  // --- Vertical Lane Lines ---
-  ctx.save();
-  ctx.globalAlpha = 0.3;
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 1;
-  for (let i = 1; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  // --- Stationary Hitline ---
-  for (let i = 0; i < LANES.length; i++) {
-    ctx.save();
-    ctx.shadowColor = LANE_COLORS[i];
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = LANE_COLORS[i];
-    ctx.fillRect(i * LANE_WIDTH, HITLINE_Y - 4, LANE_WIDTH, 4);
-    ctx.restore();
-  }
-
-  // --- Receptor Arrows with Glow ---
-  for (let i = 0; i < LANES.length; i++) {
-    const x = i * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
-    const flash = (now - receptorFlash[i]) < 100 ? 1 : 0;
-    ctx.globalAlpha = flash ? 1 : 0.6;
-
-    ctx.save();
-    ctx.shadowColor = LANE_COLORS[i];
-    ctx.shadowBlur = 20;
-    const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][i];
-    if (spr.complete) {
-      ctx.drawImage(spr, x, HITLINE_Y - ARROW_SIZE - 10, ARROW_SIZE, ARROW_SIZE);
+    if (now - laneHighlights[i] < 150) {
+      ctx.fillStyle = 'rgba(0,255,150,0.2)';
+      ctx.fillRect(x, 0, LANE_WIDTH, CANVAS_H);
     }
-    ctx.restore();
-    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#333';
+    ctx.strokeRect(x, 0, LANE_WIDTH, CANVAS_H);
+
+    ctx.fillStyle = '#555';
+    ctx.font = '16px "Press Start 2P", monospace';
+    const label = LANES[i].replace('Arrow', '');
+    ctx.fillText(label, x + (LANE_WIDTH / 2) - ctx.measureText(label).width / 2, 24);
   }
 
-  // --- Hit Flashes (DDR-style rings with glow) ---
-  const flashDuration = 200; // ms
-  for (const flash of hitFlashes) {
-    const elapsed = performance.now() - flash.start;
-    if (elapsed > flashDuration) continue;
+  ctx.strokeStyle = '#888';
+  ctx.beginPath();
+  ctx.moveTo(0, HITLINE_Y);
+  ctx.lineTo(CANVAS_W, HITLINE_Y);
+  ctx.stroke();
 
-    const progress = elapsed / flashDuration;
+  for (let i = 0; i < LANES.length; i++) {
+    drawReceptor(ctx, i);
+  }
+
+  const t = getTime();
+  for (const a of active) {
+    if (a.judged) continue;
+    const y = HITLINE_Y - (a.t - t) * ARROW_SPEED;
+    if (y < -ARROW_SIZE || y > CANVAS_H + ARROW_SIZE) continue;
+    const x = a.lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
+    drawArrowSprite(ctx, x, y, ARROW_SIZE, a.lane);
+  }
+
+  drawHitFlashes();
+
+  if (feedbackText && now - feedbackTime < 300) {
+    ctx.fillStyle = feedbackColor;
+    ctx.font = '24px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(feedbackText, CANVAS_W / 2, HITLINE_Y - 40);
+  }
+
+  if (combo > 0) {
+    const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+    const beatScale = 1 + 0.08 * Math.sin(beatTime * Math.PI * 2);
+    const beatGlow = 12 + 8 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
+
+    ctx.save();
+    ctx.translate(CANVAS_W / 2, HITLINE_Y + 60);
+    ctx.scale(beatScale, beatScale);
+    ctx.globalAlpha = 1;
+
+    ctx.shadowColor = '#00ff9d';
+    ctx.shadowBlur = beatGlow;
+
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '20px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${combo} Combo`, 0, 0);
+
+    ctx.restore();
+  }
+
+  drawCountdownOverlay(t, now);
+  ctx.textAlign = 'left';
+}
+
+/* --- Countdown overlay --- */
+function drawCountdownOverlay(t, nowMs) {
+  if (t < SONG_OFFSET) {
+    const remaining = SONG_OFFSET - t;
+    let text = '';
+    if (remaining > 1) text = '2';
+    else if (remaining > 0) text = '1';
+    else text = '';
+
+    if (text) {
+      ctx.save();
+      ctx.font = '48px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD700';
+      ctx.shadowColor = '#c29e57';
+      ctx.shadowBlur = 12;
+
+      const scale = 1 + 0.1 * Math.sin((remaining % 1) * Math.PI);
+      ctx.translate(CANVAS_W / 2, CANVAS_H / 3);
+      ctx.scale(scale, scale);
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    }
+  } else if (nowMs < showDanceUntil) {
+    ctx.save();
+    ctx.font = '32px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FF69B4';
+    ctx.shadowColor = '#fff';
+    ctx.shadowBlur = 14;
+    ctx.fillText('DANCE!', CANVAS_W / 2, CANVAS_H / 3);
+    ctx.restore();
+  }
+}
+
+/* --- Beat Pulse Receptor --- */
+function drawReceptor(ctx, lane) {
+  const flashDuration = 150;
+  const age = performance.now() - receptorFlash[lane];
+  const alpha = age < flashDuration ? 1 : 0.85;
+
+  const x = lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
+  const y = HITLINE_Y - ARROW_SIZE / 2;
+
+  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+  const pulseScale = 1 + 0.05 * Math.sin(beatTime * Math.PI * 2);
+  const pulseGlow = 8 + 7 * (1 + Math.sin(beatTime * Math.PI * 2)) / 2;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x + ARROW_SIZE / 2, y + ARROW_SIZE / 2);
+  ctx.scale(pulseScale, pulseScale);
+  ctx.translate(-ARROW_SIZE / 2, -ARROW_SIZE / 2);
+
+  ctx.shadowColor = '#fff';
+  ctx.shadowBlur = age < flashDuration ? 20 : pulseGlow;
+
+  drawArrowSprite(ctx, 0, 0, ARROW_SIZE, lane);
+  ctx.restore();
+}
+
+/* --- Hit Flash Rings --- */
+function drawHitFlashes() {
+  const now = performance.now();
+  hitFlashes = hitFlashes.filter(f => now - f.start < 250);
+
+  for (const f of hitFlashes) {
+    const progress = (now - f.start) / 250;
     const alpha = 1 - progress;
-    const xCenter = flash.lane * LANE_WIDTH + LANE_WIDTH / 2;
-    const yCenter = HITLINE_Y - ARROW_SIZE / 2;
-    const radius = ARROW_SIZE * (0.6 + progress * 0.6);
+    const size = ARROW_SIZE + 30 * progress;
+
+    const x = f.lane * LANE_WIDTH + (LANE_WIDTH / 2);
+    const y = HITLINE_Y;
 
     ctx.save();
     ctx.globalAlpha = alpha;
-
-    // Radial gradient glow
-    const gradient = ctx.createRadialGradient(xCenter, yCenter, radius * 0.5, xCenter, yCenter, radius);
-    gradient.addColorStop(0, `${LANE_COLORS[flash.lane]}88`);
-    gradient.addColorStop(1, `${LANE_COLORS[flash.lane]}00`);
-    ctx.fillStyle = gradient;
+    ctx.strokeStyle = LANE_COLORS[f.lane];
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(xCenter, yCenter, radius, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Outer ring
-    ctx.strokeStyle = LANE_COLORS[flash.lane];
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(xCenter, yCenter, radius, 0, 2 * Math.PI);
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
     ctx.stroke();
-
     ctx.restore();
   }
+}
 
-  // --- Falling Arrows ---
-  for (const a of active) {
-    if (a.judged) continue;
-    const timeToHit = a.t - t;
-    const y = HITLINE_Y - timeToHit * ARROW_SPEED;
-    if (y < -ARROW_SIZE || y > canvas.height + ARROW_SIZE) continue;
-
-    const x = a.lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
-    const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][a.lane];
-    const diff = Math.abs(timeToHit);
-    ctx.globalAlpha = diff <= HIT_WINDOW_PERFECT ? 1 : diff <= HIT_WINDOW_GOOD ? 0.85 : 0.7;
-    ctx.drawImage(spr, x, y - ARROW_SIZE / 2, ARROW_SIZE, ARROW_SIZE);
-  }
-
-  // --- Feedback Text (Perfect/Good/Miss) ---
-  if ((now - feedbackTime) < 600 && feedbackText) {
-    const pulseText = 1 + 0.15 * Math.sin((now - feedbackTime) / 50);
-    ctx.save();
-    ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 30);
-    ctx.scale(pulseText, pulseText);
-    ctx.font = "20px 'Press Start 2P', monospace";
-    ctx.fillStyle = feedbackColor;
-    ctx.textAlign = "center";
-    ctx.fillText(feedbackText, 0, 0);
-    ctx.restore();
-  } else if ((now - feedbackTime) >= 600) {
-    feedbackText = '';
-  }
-
-  // --- Combo Counter ---
-  if (combo > 1) {
-    const life = (now - comboAnimStart) / 300;
-    const scale = Math.max(1, 1.2 - life * 0.2);
-    ctx.save();
-    ctx.translate(canvas.width / 2, HITLINE_Y - ARROW_SIZE - 60);
-    ctx.scale(scale, scale);
-    ctx.font = "16px 'Press Start 2P', monospace";
-    ctx.fillStyle = "#fff";
-    ctx.textAlign = "center";
-    ctx.fillText(`${combo}x`, 0, 0);
-    ctx.restore();
-  }
+function drawArrowSprite(ctx, x, y, size, lane) {
+  const names = ['left', 'down', 'up', 'right'];
+  const img = arrowSprites[names[lane]];
+  ctx.drawImage(img, x, y, size, size);
 }
 
 /* ---------------- Loop ---------------- */
@@ -398,6 +470,7 @@ function showModal() { scoreModal?.classList.remove('hidden'); }
 function hideModal() { scoreModal?.classList.add('hidden'); }
 
 const scoresCollection = collection(db, "scores");
+
 async function saveScore(event) {
   event?.preventDefault();
   let initials = (guestNameInput?.value || '---').trim();
@@ -418,7 +491,6 @@ async function saveScore(event) {
 }
 
 async function displayBoard() {
-  if (!messageBoardBody) return;
   try {
     const q = query(scoresCollection, orderBy("score", "desc"));
     const snapshot = await getDocs(q);
@@ -450,18 +522,23 @@ function escapeHTML(str) {
 
 /* ---------------- Events ---------------- */
 document.addEventListener('keydown', (e) => {
-  const arrows = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
-  if (arrows.includes(e.key)) {
-    e.preventDefault();            // <-- stops the page from scrolling
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
     if (playing) judgeHit(e.key);
   }
-}, { passive: false });
+});
 
 startBtn?.addEventListener('click', startGame);
 retryBtn?.addEventListener('click', startGame);
 submitScoreBtn?.addEventListener('click', (e) => saveScore(e));
 skipSubmitBtn?.addEventListener('click', hideModal);
 
+if (difficultySelect) {
+  difficultySelect.addEventListener('change', (e) => {
+    setDifficulty(e.target.value);
+  });
+}
+
+// Mobile button controls
 document.querySelectorAll('#mobile-controls button').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.key;
@@ -469,9 +546,27 @@ document.querySelectorAll('#mobile-controls button').forEach(btn => {
   });
 });
 
-bgm?.addEventListener('ended', () => {
-  if (playing) endGame();
-});
+// Inject CSS for larger mobile buttons
+const style = document.createElement('style');
+style.innerHTML = `
+  @media (max-width: 768px) {
+    #mobile-controls button {
+      font-size: 1.5rem !important;
+      padding: 1rem 1.5rem !important;
+      min-width: 70px !important;
+      margin: 0.3rem;
+    }
+  }
+`;
+document.head.appendChild(style);
 
-setCurrentSong(currentSongIndex);
+// Initial board render
 displayBoard();
+
+/* ---------------- Auto-scroll to mobile controls on load ---------------- */
+window.addEventListener('load', () => {
+  const controls = document.getElementById('mobile-controls');
+  if (controls) {
+    controls.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
