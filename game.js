@@ -10,27 +10,9 @@ import {
 
 /***** SONG SETUP *****/
 const SONGS = [
-  {
-    title: "Apt",
-    file: "apt_easy.mp3",
-    bpm: 140,
-    snippet: 30,
-    cover: "cover1.png"
-  },
-  {
-    title: "Butter",
-    file: "butter_snippet.mp3",
-    bpm: 120,
-    snippet: 30,
-    cover: "cover2.png"
-  },
-  {
-    title: "Level Up",
-    file: "Ciara-Level-Up-15_7s-to-49_7s.mp3",
-    bpm: 160,
-    snippet: 30,
-    cover: "cover3.png"
-  }
+  { title: "Apt (Easy)",      file: "apt_easy.mp3",                         bpm: 140, snippet: 30, cover: "apt2cover.png" },
+  { title: "Butter (Medium)", file: "butter_snippet.mp3",                   bpm: 120, snippet: 30, cover: "cover2.png" },
+  { title: "Level Up (Hard)", file: "Ciara-Level-Up-15_7s-to-49_7s.mp3",    bpm: 160, snippet: 30, cover: "cover3.png" }
 ];
 
 let currentSongIndex = 0;
@@ -54,9 +36,8 @@ let ARROW_SPEED = 350;
 
 let BEAT_INTERVAL = 60 / BPM;
 const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
-const MAX_ROWS = 50;
-/******************/
 
+/******************/
 /* ---------------- Audio ---------------- */
 const bgm = document.getElementById('bgm');
 function setCurrentSong(index) {
@@ -64,13 +45,16 @@ function setCurrentSong(index) {
   BPM = SONGS[index].bpm;
   SNIPPET_SECONDS = SONGS[index].snippet;
   BEAT_INTERVAL = 60 / BPM;
-  bgm.src = SONGS[index].file;
+  if (bgm) {
+    bgm.src = SONGS[index].file;
+    bgm.load();
+  }
   console.log("Selected song:", SONGS[index].title);
 }
 
 /* ---------------- Canvas ---------------- */
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas?.getContext('2d');
 
 /* ---------------- HUD Elements ---------------- */
 const scoreEl = document.getElementById('score');
@@ -87,6 +71,9 @@ const guestNameInput = document.getElementById('guestName');
 const guestMessageInput = document.getElementById('guestMessage');
 
 const messageBoardBody = document.querySelector('#messageBoard tbody');
+
+/* --- Song list UI --- */
+const trackCards = document.querySelectorAll('.track-card');
 
 let playing = false;
 let startTime = 0;
@@ -107,6 +94,7 @@ let comboAnimStart = 0;
 
 let hitFlashes = [];
 let showDanceUntil = 0; // Countdown state
+let lastGameEnd = 0;
 
 /* --- Load Arrow Sprites --- */
 const arrowSprites = {
@@ -122,6 +110,7 @@ arrowSprites.right.src = "arrow_right.png";
 
 /* ---------------- Responsive Canvas ---------------- */
 function resizeCanvasIfNeeded() {
+  if (!canvas) return;
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
   LANE_WIDTH = CANVAS_W / LANES.length;
@@ -144,6 +133,17 @@ function resetState() {
 }
 
 function startGame() {
+  if (performance.now() - lastGameEnd < 300) return;
+
+  if (!canvas || !ctx) {
+    console.error("Canvas or context missing");
+    return;
+  }
+  if (!bgm) {
+    console.error("Audio element #bgm missing");
+    return;
+  }
+
   resetState();
   playing = true;
   retryBtn?.classList.add('hidden');
@@ -160,8 +160,9 @@ function startGame() {
 
 function endGame() {
   playing = false;
+  lastGameEnd = performance.now();
   cancelAnimationFrame(raf);
-  bgm.pause();
+  if (bgm) bgm.pause();
   if (finalScoreEl) finalScoreEl.textContent = score;
   retryBtn?.classList.remove('hidden');
   showModal();
@@ -187,6 +188,7 @@ function getTime() {
 function judgeHit(key) {
   const lane = LANES.indexOf(key);
   if (lane === -1) return;
+  if (!playing) return;
 
   const t = getTime();
   let best = null;
@@ -212,6 +214,7 @@ function judgeHit(key) {
 
 function applyHit(arrow, result) {
   arrow.judged = true;
+  arrow.result = result;
   score += (result === 'perfect' ? 300 : 100);
   feedbackText = result.toUpperCase() + '!';
   feedbackColor = (result === 'perfect' ? '#4dff88' : '#ffd24d');
@@ -247,8 +250,68 @@ function updateHUD() {
 }
 
 /* ---------------- Draw ---------------- */
-// (Draw function remains unchanged)
+function draw() {
+  if (!ctx || !canvas) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const now = performance.now();
+  const t = getTime();
+
+  for (let i = 0; i < LANES.length; i++) {
+    const x = i * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
+    const flash = (now - receptorFlash[i]) < 100 ? 1 : 0;
+    ctx.globalAlpha = flash ? 1 : 0.6;
+    ctx.fillStyle = LANE_COLORS[i];
+    ctx.fillRect(i * LANE_WIDTH, HITLINE_Y - 4, LANE_WIDTH, 8);
+    ctx.globalAlpha = 1;
+
+    ctx.globalAlpha = flash ? 1 : 0.8;
+    const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][i];
+    if (spr.complete) {
+      ctx.drawImage(spr, x, HITLINE_Y - ARROW_SIZE - 10, ARROW_SIZE, ARROW_SIZE);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  for (const a of active) {
+    if (a.judged) continue;
+    const timeToHit = a.t - t;
+    const y = HITLINE_Y - timeToHit * ARROW_SPEED;
+    if (y < -ARROW_SIZE || y > canvas.height + ARROW_SIZE) continue;
+
+    const x = a.lane * LANE_WIDTH + (LANE_WIDTH - ARROW_SIZE) / 2;
+    const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][a.lane];
+    const diff = Math.abs(timeToHit);
+    ctx.globalAlpha = diff <= HIT_WINDOW_PERFECT ? 1 : diff <= HIT_WINDOW_GOOD ? 0.85 : 0.7;
+    ctx.drawImage(spr, x, y - ARROW_SIZE / 2, ARROW_SIZE, ARROW_SIZE);
+    ctx.globalAlpha = 1;
+  }
+
+  if ((now - feedbackTime) < 600 && feedbackText) {
+    ctx.font = "32px Arial";
+    ctx.fillStyle = feedbackColor;
+    ctx.textAlign = "center";
+    ctx.fillText(feedbackText, canvas.width / 2, canvas.height / 2);
+  }
+
+  if (combo > 1) {
+    const life = (now - comboAnimStart) / 300;
+    const scale = Math.max(1, 1.2 - life * 0.2);
+    ctx.save();
+    ctx.translate(canvas.width - 80, 80);
+    ctx.scale(scale, scale);
+    ctx.font = "28px Arial";
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.fillText(`${combo}x`, 0, 0);
+    ctx.restore();
+  }
+}
+
+/* ---------------- Loop ---------------- */
 function loop() {
   if (!playing) return;
   missOldArrows();
@@ -289,6 +352,7 @@ async function saveScore(event) {
 }
 
 async function displayBoard() {
+  if (!messageBoardBody) return;
   try {
     const q = query(scoresCollection, orderBy("score", "desc"));
     const snapshot = await getDocs(q);
@@ -318,6 +382,16 @@ function escapeHTML(str) {
     .replace(/>/g, '&gt;');
 }
 
+/* ---------------- Track Selection Events ---------------- */
+trackCards.forEach(card => {
+  card.addEventListener('click', () => {
+    const index = Number(card.dataset.index);
+    setCurrentSong(index);
+    trackCards.forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+  });
+});
+
 /* ---------------- Events ---------------- */
 document.addEventListener('keydown', (e) => {
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
@@ -330,7 +404,6 @@ retryBtn?.addEventListener('click', startGame);
 submitScoreBtn?.addEventListener('click', (e) => saveScore(e));
 skipSubmitBtn?.addEventListener('click', hideModal);
 
-// Mobile button controls
 document.querySelectorAll('#mobile-controls button').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.key;
@@ -338,5 +411,9 @@ document.querySelectorAll('#mobile-controls button').forEach(btn => {
   });
 });
 
-// Initial board render
+bgm?.addEventListener('ended', () => {
+  if (playing) endGame();
+});
+
+setCurrentSong(currentSongIndex);
 displayBoard();
