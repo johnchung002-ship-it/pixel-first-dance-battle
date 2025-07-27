@@ -280,6 +280,12 @@ function draw() {
 
   const now = performance.now();
 
+    // --- Background Beat Pulse ---
+  const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
+  const pulse = 0.25 + 0.15 * Math.sin(beatTime * Math.PI * 2); 
+  ctx.fillStyle = `rgba(255, 105, 180, ${pulse * 0.2})`; // pink pulse overlay
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
   for (let i = 0; i < LANES.length; i++) {
     const x = i * LANE_WIDTH;
     if (now - laneHighlights[i] < 150) {
