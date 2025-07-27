@@ -257,18 +257,25 @@ function draw() {
     }
   }
 
-  // --- Hit Flashes ---
-  const flashDuration = 150; // milliseconds
+  // --- Hit Flashes (DDR-style rings) ---
+  const flashDuration = 200; // milliseconds
   for (const flash of hitFlashes) {
     const elapsed = performance.now() - flash.start;
     if (elapsed > flashDuration) continue;
 
-    const alpha = 1 - elapsed / flashDuration;
-    const x = flash.lane * LANE_WIDTH;
+    const progress = elapsed / flashDuration;
+    const alpha = 1 - progress;
+    const xCenter = flash.lane * LANE_WIDTH + LANE_WIDTH / 2;
+    const yCenter = HITLINE_Y - ARROW_SIZE / 2;
+
+    ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = LANE_COLORS[flash.lane];
-    ctx.fillRect(x, HITLINE_Y - 40, LANE_WIDTH, 80);
-    ctx.globalAlpha = 1;
+    ctx.strokeStyle = LANE_COLORS[flash.lane];
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(xCenter, yCenter, ARROW_SIZE * (0.6 + progress * 0.6), 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
   }
 
   // Draw falling arrows
