@@ -1,4 +1,4 @@
-/***** IMPORT FIREBASE *****/
+/***** FIREBASE IMPORTS *****/
 import { db } from './firebase-config.js';
 import {
   collection,
@@ -31,18 +31,18 @@ const LANE_COLORS = ['#ff4d4d', '#4d94ff', '#4dff88', '#ffd24d'];
 const MAX_ROWS = 50;
 /******************/
 
-// Prevent arrow keys from scrolling page
+// Prevent arrow keys / space from scrolling the page **unless typing in inputs**
 window.addEventListener(
   "keydown",
   function (e) {
     const isTypingElement =
       document.activeElement &&
       (document.activeElement.tagName === 'INPUT' ||
-       document.activeElement.tagname === 'TEXTAREA' ||
+       document.activeElement.tagName === 'TEXTAREA' ||
        document.activeElement.isContentEditable);
 
     if (!isTypingElement &&
-      ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
       e.preventDefault();
     }
   },
@@ -85,7 +85,10 @@ let feedbackText = '';
 let feedbackColor = '#fff';
 let feedbackTime = 0;
 let comboAnimStart = 0;
+
 let hitFlashes = [];
+
+// Countdown state
 let showDanceUntil = 0;
 
 /* --- Load Arrow Sprites --- */
@@ -126,6 +129,7 @@ function setDifficulty(mode) {
 }
 setDifficulty(difficultySelect ? difficultySelect.value : 'normal');
 
+/* --- Prevent dropdown stealing focus during gameplay --- */
 function lockDifficultySelect() {
   if (difficultySelect) {
     difficultySelect.setAttribute('tabindex', '-1');
@@ -278,6 +282,7 @@ function draw() {
 
   const now = performance.now();
 
+  // --- Background Beat Pulse ---
   const beatTime = ((getTime() - SONG_OFFSET) % BEAT_INTERVAL) / BEAT_INTERVAL;
   const pulse = 0.25 + 0.15 * Math.sin(beatTime * Math.PI * 2);
   ctx.fillStyle = `rgba(255, 105, 180, ${pulse * 0.2})`;
@@ -348,16 +353,17 @@ function draw() {
   }
 
   drawCountdownOverlay(t, now);
-
   ctx.textAlign = 'left';
 }
 
+/* --- Countdown overlay --- */
 function drawCountdownOverlay(t, nowMs) {
   if (t < SONG_OFFSET) {
     const remaining = SONG_OFFSET - t;
     let text = '';
     if (remaining > 1) text = '2';
     else if (remaining > 0) text = '1';
+    else text = '';
 
     if (text) {
       ctx.save();
@@ -385,6 +391,7 @@ function drawCountdownOverlay(t, nowMs) {
   }
 }
 
+/* --- Beat Pulse Receptor --- */
 function drawReceptor(ctx, lane) {
   const flashDuration = 150;
   const age = performance.now() - receptorFlash[lane];
@@ -410,6 +417,7 @@ function drawReceptor(ctx, lane) {
   ctx.restore();
 }
 
+/* --- Hit Flash Rings --- */
 function drawHitFlashes() {
   const now = performance.now();
   hitFlashes = hitFlashes.filter(f => now - f.start < 250);
@@ -459,12 +467,12 @@ const scoresCollection = collection(db, "scores");
 
 async function saveScore(event) {
   event?.preventDefault();
-  const name = (guestNameInput?.value || '---').trim();
+  let initials = (guestNameInput?.value || '---').trim();
   const message = (guestMessageInput?.value || '').trim();
 
   try {
     await addDoc(scoresCollection, {
-      name: name || '---',
+      initials: initials || '---',
       score,
       message,
       ts: Date.now()
@@ -480,7 +488,6 @@ async function displayBoard() {
   try {
     const q = query(scoresCollection, orderBy("score", "desc"));
     const snapshot = await getDocs(q);
-
     const rows = [];
     let rank = 1;
     snapshot.forEach(doc => {
@@ -488,13 +495,12 @@ async function displayBoard() {
       rows.push(`
         <tr>
           <td>${rank++}</td>
-          <td>${escapeHTML(data.name)}</td>
+          <td>${escapeHTML(data.initials)}</td>
           <td>${data.score}</td>
           <td>${escapeHTML(data.message || '')}</td>
         </tr>
       `);
     });
-
     messageBoardBody.innerHTML = rows.join('');
   } catch (err) {
     console.error("Error fetching scores:", err);
@@ -520,5 +526,41 @@ retryBtn?.addEventListener('click', startGame);
 submitScoreBtn?.addEventListener('click', (e) => saveScore(e));
 skipSubmitBtn?.addEventListener('click', hideModal);
 
-// initial board render
+if (difficultySelect) {
+  difficultySelect.addEventListener('change', (e) => {
+    setDifficulty(e.target.value);
+  });
+}
+
+// Mobile button controls
+document.querySelectorAll('#mobile-controls button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.key;
+    if (playing) judgeHit(key);
+  });
+});
+
+// Inject CSS for larger mobile buttons
+const style = document.createElement('style');
+style.innerHTML = `
+  @media (max-width: 768px) {
+    #mobile-controls button {
+      font-size: 1.5rem !important;
+      padding: 1rem 1.5rem !important;
+      min-width: 70px !important;
+      margin: 0.3rem;
+    }
+  }
+`;
+document.head.appendChild(style);
+
+// Initial board render
 displayBoard();
+
+/* ---------------- Auto-scroll to mobile controls on load ---------------- */
+window.addEventListener('load', () => {
+  const controls = document.getElementById('mobile-controls');
+  if (controls) {
+    controls.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
