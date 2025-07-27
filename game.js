@@ -306,18 +306,20 @@ for (const flash of hitFlashes) {
     ctx.drawImage(spr, x, y - ARROW_SIZE / 2, ARROW_SIZE, ARROW_SIZE);
   }
 
-  // Feedback text with pulse
-  if ((now - feedbackTime) < 600 && feedbackText) {
-    const pulse = 1 + 0.2 * Math.sin((now - feedbackTime) / 50); // pulsing scale
-    ctx.save();
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.scale(pulse, pulse);
-    ctx.font = "32px 'Press Start 2P', monospace"; // pixel font
-    ctx.fillStyle = feedbackColor;
-    ctx.textAlign = "center";
-    ctx.fillText(feedbackText, 0, 0);
-    ctx.restore();
-  }
+// Feedback text with pulse
+if ((now - feedbackTime) < 600 && feedbackText) {
+  const pulse = 1 + 0.15 * Math.sin((now - feedbackTime) / 50);
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.scale(pulse, pulse);
+  ctx.font = "20px 'Press Start 2P', monospace"; // smaller pixel font
+  ctx.fillStyle = feedbackColor;
+  ctx.textAlign = "center";
+  ctx.fillText(feedbackText, 0, 0);
+  ctx.restore();
+} else if ((now - feedbackTime) >= 600) {
+  feedbackText = ''; // Clear feedback text after display
+}
 
   // Combo count with slight scale effect
   if (combo > 1) {
