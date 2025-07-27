@@ -250,6 +250,21 @@ function draw() {
     ctx.fillRect(i * LANE_WIDTH, HITLINE_Y - 4, LANE_WIDTH, 8);
     ctx.globalAlpha = 1;
 
+    // --- Add Hit Flashes Here ---
+const flashDuration = 150; // milliseconds
+for (const flash of hitFlashes) {
+  const elapsed = performance.now() - flash.start;
+  if (elapsed > flashDuration) continue;
+
+  const alpha = 1 - elapsed / flashDuration;
+  const x = flash.lane * LANE_WIDTH;
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = LANE_COLORS[flash.lane];
+  ctx.fillRect(x, HITLINE_Y - 40, LANE_WIDTH, 80);
+  ctx.globalAlpha = 1;
+}
+// --- End Hit Flashes ---
+    
     const spr = [arrowSprites.left, arrowSprites.down, arrowSprites.up, arrowSprites.right][i];
     if (spr.complete) {
       ctx.drawImage(spr, x, HITLINE_Y - ARROW_SIZE - 10, ARROW_SIZE, ARROW_SIZE);
