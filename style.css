@@ -13,12 +13,15 @@
   font-family: 'Press Start 2P', monospace;
 }
 
-* { box-sizing: border-box; }
+* { 
+  box-sizing: border-box;
+}
 
 html, body {
   overscroll-behavior: contain; /* Prevent bounce while allowing scroll */
   height: 100%;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%; /* Prevents iOS font auto-zoom */
 }
 
 body {
@@ -32,8 +35,8 @@ body {
 
 /* Game container */
 #game-root {
-  width: 520px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 520px;
   padding: 12px;
   position: relative;
   z-index: 1;
@@ -58,10 +61,18 @@ body {
   50% { filter: brightness(1.1); }
 }
 
-/* HUD, buttons, and mobile controls remain unchanged, except for touch-action */
+/* Mobile Controls */
+#mobile-controls {
+  display: none;
+  margin: 10px 0 20px;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+  border-radius: 6px;
+  padding: 6px;
+}
+
 #mobile-controls button {
   font-family: 'Press Start 2P', monospace;
-  font-size: 20px;
+  font-size: 18px;
   padding: 14px 8px;
   border: 3px solid #FFD700;
   background: rgba(0, 0, 0, 0.6);
@@ -71,5 +82,40 @@ body {
   transition: all 0.2s ease, transform 0.1s ease;
   text-shadow: 0 0 4px #000, 0 0 8px #FFD700;
   width: 100%;
-  touch-action: manipulation; /* Allows scroll but disables double-tap zoom */
+  touch-action: manipulation; /* Prevent double-tap zoom but allow scroll */
+}
+
+#mobile-controls button:hover {
+  background: #FFD700;
+  color: #111;
+  transform: scale(1.05);
+}
+
+#mobile-controls button:active {
+  background: #FF69B4;
+  border-color: #fff;
+  color: #fff;
+  transform: scale(1.1);
+}
+
+@media (max-width: 600px) {
+  #mobile-controls {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  #game-root {
+    padding: 6px;
+  }
+
+  #stage-wrap {
+    max-width: 100%;
+    height: auto;
+  }
+
+  canvas#gameCanvas {
+    width: 100% !important;
+    height: auto !important;
+  }
 }
