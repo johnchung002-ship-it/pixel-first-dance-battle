@@ -561,6 +561,27 @@ document.querySelectorAll('#mobile-controls button').forEach(btn => {
     if (playing) judgeHit(key);
   });
 });
+// Inject CSS for larger mobile buttons
+const style = document.createElement('style');
+style.innerHTML = `
+  @media (max-width: 768px) {
+    #mobile-controls button {
+      font-size: 1.5rem !important;
+      padding: 1rem 1.5rem !important;
+      min-width: 70px !important;
+      margin: 0.3rem;
+    }
+  }
+`;
+document.head.appendChild(style);
+
+// Mobile button controls
+document.querySelectorAll('#mobile-controls button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.key;
+    if (playing) judgeHit(key);
+  });
+});
 
 // initial board render
 displayBoard();
