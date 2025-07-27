@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- Proper responsive scaling on mobile + desktops -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>Pixel First Dance Battle</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -70,7 +71,7 @@
     </section>
   </div>
 
-  <!-- Single Music Element -->
+  <!-- Single Music Element (src is set in game.js) -->
   <audio id="bgm" preload="auto"></audio>
 
   <!-- Score Modal -->
@@ -88,7 +89,7 @@
     </div>
   </div>
 
-  <!-- Load Game Script as Module -->
+  <!-- Game Script -->
   <script type="module" src="game.js"></script>
 
   <!-- Song Selection Logic -->
