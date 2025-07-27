@@ -257,26 +257,40 @@ function draw() {
     }
   }
 
-  // --- Hit Flashes (DDR-style rings) ---
-  const flashDuration = 200; // milliseconds
-  for (const flash of hitFlashes) {
-    const elapsed = performance.now() - flash.start;
-    if (elapsed > flashDuration) continue;
+// --- Hit Flashes (DDR-style rings with glow) ---
+const flashDuration = 200; // milliseconds
+for (const flash of hitFlashes) {
+  const elapsed = performance.now() - flash.start;
+  if (elapsed > flashDuration) continue;
 
-    const progress = elapsed / flashDuration;
-    const alpha = 1 - progress;
-    const xCenter = flash.lane * LANE_WIDTH + LANE_WIDTH / 2;
-    const yCenter = HITLINE_Y - ARROW_SIZE / 2;
+  const progress = elapsed / flashDuration;
+  const alpha = 1 - progress;
+  const xCenter = flash.lane * LANE_WIDTH + LANE_WIDTH / 2;
+  const yCenter = HITLINE_Y - ARROW_SIZE / 2;
+  const radius = ARROW_SIZE * (0.6 + progress * 0.6);
 
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = LANE_COLORS[flash.lane];
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(xCenter, yCenter, ARROW_SIZE * (0.6 + progress * 0.6), 0, 2 * Math.PI);
-    ctx.stroke();
-    ctx.restore();
-  }
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // Create radial gradient for glow
+  const gradient = ctx.createRadialGradient(xCenter, yCenter, radius * 0.5, xCenter, yCenter, radius);
+  gradient.addColorStop(0, `${LANE_COLORS[flash.lane]}88`); // semi-transparent center
+  gradient.addColorStop(1, `${LANE_COLORS[flash.lane]}00`); // fade to transparent
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(xCenter, yCenter, radius, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // Outer stroke ring
+  ctx.strokeStyle = LANE_COLORS[flash.lane];
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(xCenter, yCenter, radius, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  ctx.restore();
+}
 
   // Draw falling arrows
   for (const a of active) {
