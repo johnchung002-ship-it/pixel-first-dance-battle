@@ -16,10 +16,10 @@
 * { box-sizing: border-box; }
 
 html, body {
-  overscroll-behavior: none;
-  touch-action: none; /* Prevent unintended scroll */
+  overscroll-behavior: contain; /* Prevent bounce but allow scroll */
   height: 100%;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%; /* Prevent iOS auto zoom */
 }
 
 body {
@@ -300,7 +300,6 @@ header h1 {
 .modal-content textarea {
   width: 90%;
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
   font-size: 16px !important; /* Prevent iOS zoom on focus */
   margin: 8px 0 16px;
   padding: 4px;
