@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Pixel First Dance Battle</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -98,9 +97,12 @@
       album.addEventListener('click', () => {
         const index = parseInt(album.dataset.song, 10);
         document.getElementById('song-selection').classList.add('hidden');
-        import('./game.js').then(module => {
-          module.setCurrentSong(index);
-        });
+        // Call the setCurrentSong function from game.js
+        if (window.setCurrentSong) {
+          window.setCurrentSong(index);
+        } else {
+          console.error("setCurrentSong not found on window");
+        }
       });
     });
   </script>
