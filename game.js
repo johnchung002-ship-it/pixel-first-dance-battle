@@ -42,10 +42,10 @@ const HITLINE_Y = 520;
 const ARROW_SIZE = 64;
 let LANE_WIDTH = CANVAS_W / LANES.length;
 
-let BPM = 140;
+let BPM = SONGS[currentSongIndex].bpm;
 const NOTES_PER_BEAT = 2;
 const SONG_OFFSET = 1.0;
-let SNIPPET_SECONDS = 30;
+let SNIPPET_SECONDS = SONGS[currentSongIndex].snippet;
 
 let HIT_WINDOW_PERFECT = 0.08;
 let HIT_WINDOW_GOOD = 0.15;
@@ -153,24 +153,6 @@ function setDifficulty(mode) {
 }
 setDifficulty(difficultySelect ? difficultySelect.value : 'normal');
 
-/* --- Prevent dropdown stealing focus during gameplay --- */
-function lockDifficultySelect() {
-  if (difficultySelect) {
-    difficultySelect.setAttribute('tabindex', '-1');
-    difficultySelect.blur();
-    difficultySelect.addEventListener('keydown', blockWhilePlaying);
-  }
-}
-function unlockDifficultySelect() {
-  if (difficultySelect) {
-    difficultySelect.removeAttribute('tabindex');
-    difficultySelect.removeEventListener('keydown', blockWhilePlaying);
-  }
-}
-function blockWhilePlaying(e) {
-  if (playing) e.preventDefault();
-}
-
 /* ---------------- Core ---------------- */
 function resetState() {
   score = 0;
@@ -178,7 +160,7 @@ function resetState() {
   combo = 0;
   updateHUD();
   arrows = buildPatternForSnippet();
-  console.log('Arrows generated:', arrows); // DEBUG
+  console.log('Arrows generated:', arrows);
   active = arrows.map(a => ({ ...a, judged: false, result: null }));
   totalNotes = arrows.length;
   laneHighlights = [0, 0, 0, 0];
@@ -188,9 +170,12 @@ function resetState() {
 }
 
 function startGame() {
-  console.log('Start button clicked'); // DEBUG
+  console.log('Start button clicked');
+  if (!bgm.src) {
+    setCurrentSong(currentSongIndex);
+  }
+
   resetState();
-  lockDifficultySelect();
   playing = true;
   retryBtn?.classList.add('hidden');
   startBtn?.classList.add('hidden');
@@ -208,7 +193,6 @@ function startGame() {
 
 function endGame() {
   playing = false;
-  unlockDifficultySelect();
   cancelAnimationFrame(raf);
   if (bgm) bgm.pause();
   if (finalScoreEl) finalScoreEl.textContent = score;
@@ -240,18 +224,11 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-startBtn?.addEventListener('click', startGame);
-retryBtn?.addEventListener('click', startGame);
+startBtn?.addEventListener('click', () => startGame());
+retryBtn?.addEventListener('click', () => startGame());
 submitScoreBtn?.addEventListener('click', (e) => saveScore(e));
 skipSubmitBtn?.addEventListener('click', hideModal);
 
-if (difficultySelect) {
-  difficultySelect.addEventListener('change', (e) => {
-    setDifficulty(e.target.value);
-  });
-}
-
-// Mobile button controls
 document.querySelectorAll('#mobile-controls button').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.key;
