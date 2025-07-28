@@ -103,9 +103,9 @@ resizeCanvasIfNeeded();
 function applySongDifficulty(index) {
   // Apt = Easy, Butter = Medium, Level Up = Hard
   if (index === 0) {          // Easy
-    ARROW_SPEED = 200;
-    HIT_WINDOW_PERFECT = 0.12;
-    HIT_WINDOW_GOOD = 0.22;
+    ARROW_SPEED = 250;
+    HIT_WINDOW_PERFECT = 0.15;
+    HIT_WINDOW_GOOD = 0.3;
   } else if (index === 1) {   // Medium
     ARROW_SPEED = 350;
     HIT_WINDOW_PERFECT = 0.08;
